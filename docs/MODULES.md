@@ -1,33 +1,41 @@
 # Modules
 
-## v0.1.0
+## Stable baseline — v0.1.0
 
-No content-domain module is active yet. v0.1.0 contains only the Core bootstrap and Health REST controller.
+The stable runtime baseline contains the Core bootstrap and Health REST controller.
 
-## Planned sequence
+## News — first content pilot
 
-### News — first pilot
+Status: **feature development / candidate v0.2.0**.
 
-Wrap native WordPress `post` content in a clean Headless API Core contract. Do not create a News CPT unless a future requirement proves native posts insufficient.
+News wraps the native WordPress `post` type in a provider-owned REST contract. No News CPT is introduced because native posts already model the editorial domain required by the first consumer.
 
-Minimum planned capabilities:
+Responsibilities:
 
-- collection endpoint;
-- single-by-slug endpoint;
-- public published content only;
-- pagination and reasonable limits;
-- ID, slug, title, excerpt and content;
-- published/modified dates;
-- featured image metadata and alt text;
-- categories;
-- SEO metadata when justified and mapped;
-- deterministic 404 behavior.
+- expose a paginated public collection;
+- expose a single published post by slug;
+- exclude unpublished and password-protected content;
+- normalize ID, slug, title, excerpt and rendered content;
+- normalize publication and modification dates;
+- normalize featured image metadata and alt text;
+- normalize categories;
+- expose a small provider-owned SEO shape with optional Yoast-backed values;
+- return deterministic 404 errors;
+- keep WordPress/Yoast implementation details behind the REST contract.
 
-The definitive News schema must be documented before it is treated as frozen.
+### Internal split
 
-### Later modules
+The module is intentionally divided into small responsibilities:
 
-Hero, Services, Directory, Galleries and Settings are intentionally deferred until the News pipeline is validated end-to-end.
+- `News_Module`: module bootstrap;
+- `News_Controller`: route registration, request validation, querying and HTTP responses;
+- `News_Serializer`: WordPress object -> public API payload transformation.
+
+The definitive public schema lives in `docs/REST-API.md` and must be validated on a real CMS before it is frozen.
+
+## Later modules
+
+Hero, Services, Directory, Galleries and Settings remain intentionally deferred until the News pipeline is validated end-to-end.
 
 ## Module admission rule
 
