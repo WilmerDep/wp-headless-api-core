@@ -2,9 +2,6 @@ name: Validate and Build
 
 on:
   push:
-    branches:
-      - main
-      - develop
   pull_request:
     branches:
       - main
@@ -33,8 +30,22 @@ jobs:
             php -l "$file"
           done < <(find . -type f -name '*.php' -print0)
 
+      - name: Resolve plugin version
+        id: plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^[[:space:]]*\* Version:[[:space:]]*//p' wp-headless-api-core.php | head -n 1 | tr -d '\r')"
+          if [[ -z "$version" ]]; then
+            echo "Could not resolve plugin version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Build WordPress plugin ZIP
         shell: bash
+        env:
+          PLUGIN_VERSION: ${{ steps.plugin.outputs.version }}
         run: |
           set -euo pipefail
           mkdir -p build/wp-headless-api-core
@@ -44,11 +55,11 @@ jobs:
             --exclude='build' \
             ./ build/wp-headless-api-core/
           cd build
-          zip -rq wp-headless-api-core-v0.1.0.zip wp-headless-api-core
+          zip -rq "wp-headless-api-core-v${PLUGIN_VERSION}.zip" wp-headless-api-core
 
       - name: Upload installable plugin ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: wp-headless-api-core-v0.1.0
-          path: build/wp-headless-api-core-v0.1.0.zip
+          name: wp-headless-api-core-v${{ steps.plugin.outputs.version }}
+          path: build/wp-headless-api-core-v${{ steps.plugin.outputs.version }}.zip
           if-no-files-found: error
