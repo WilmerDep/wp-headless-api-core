@@ -2,7 +2,7 @@
 
 Reusable, modular WordPress plugin for exposing a stable, documented REST contract to decoupled frontends such as Next.js and React.
 
-> Status: initial project bootstrap. Development happens on `develop`; `main` is reserved for stable milestones/releases.
+> Status: v0.1.0 Health baseline validated on the first real CMS. News is under development on `feature/news-api` as candidate v0.2.0. `main` remains the stable line and `develop` the integration line.
 
 ## Goals
 
@@ -12,9 +12,11 @@ Reusable, modular WordPress plugin for exposing a stable, documented REST contra
 - Keep the core generic and reusable across institutional websites.
 - Prefer WordPress Core APIs and small internal modules over unnecessary third-party dependencies.
 
-## Initial roadmap
+## Roadmap
 
 ### v0.1.0 — Bootstrap + Health
+
+Runtime-validated on the HOSGEDOPOL CMS.
 
 - Installable/activatable plugin.
 - Modular bootstrap.
@@ -22,18 +24,24 @@ Reusable, modular WordPress plugin for exposing a stable, documented REST contra
 - Public read-only `GET /wp-json/headless-core/v1/health` endpoint.
 - Initial architecture, installation, configuration and security documentation.
 
-### v0.1.x — News pilot
+### v0.2.0 — News pilot
 
-After the Health endpoint is validated in WordPress, the first content module will normalize native WordPress posts through:
+Current candidate feature.
 
 - `GET /wp-json/headless-core/v1/news`
 - `GET /wp-json/headless-core/v1/news/{slug}`
+- Native WordPress `post` source.
+- Published, non-password-protected content only.
+- Pagination and deterministic ordering.
+- Featured image and category normalization.
+- Detail HTML content.
+- Provider-owned SEO shape with optional Yoast-backed values.
 
-The News contract will be documented before it is treated as stable.
+The exact public schema is documented in `docs/REST-API.md` and will not be frozen until it passes runtime validation on the target CMS.
 
 ## Architecture principles
 
-- No institution-specific domains, IDs, colors, copy, users or secrets in the core.
+- No institution-specific domains, IDs, colors, copy, users or secrets in runtime code.
 - No frontend application code in this repository.
 - Public content endpoints are read-only.
 - Administrative/private endpoints must use authentication, capability checks and explicit `permission_callback` functions.
@@ -48,7 +56,9 @@ The first real consumer is HOSGEDOPOL. Consumer-specific URLs and integration de
 
 - `main`: stable milestones/releases.
 - `develop`: integration/development branch.
-- Feature branches may be introduced when they improve isolation (`feature/news-api`, `feature/hero`, etc.).
+- `feature/*`: isolated feature work, including `feature/news-api`.
+
+GitHub Actions validates PHP syntax and produces a version-aware installable WordPress ZIP for each pushed branch.
 
 Before a release: validate PHP syntax, activation/deactivation, REST routes, permissions, errors, documentation, changelog and plugin version.
 
