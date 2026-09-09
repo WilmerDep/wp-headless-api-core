@@ -47,8 +47,8 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] Runtime SEO validation identified the CMS branding suffix `CMS API HOSGEDOPOL` in Yoast-generated title values.
 - [x] First SEO cleanup attempt based on `get_bloginfo( 'name' )` was retested and did not remove the runtime suffix, proving Yoast's generated branding is not reliably identical to the WordPress blog name in this installation.
 - [x] Feature branch now uses a more robust provider rule: when Yoast returns the native post title followed by a separator and additional CMS branding, expose the native title instead. This avoids hardcoding institution-specific CMS names while preserving genuinely custom SEO titles.
+- [x] Robust SEO-title cleanup retested successfully on post ID `23910`: both `seo.title` and `seo.openGraph.title` now match the native public post title and no longer expose the internal `CMS API HOSGEDOPOL` suffix.
 - [x] Legacy content observation: post ID `23916` has a percent-encoded WordPress source slug and decorative mathematical Unicode text. The provider intentionally preserves the native source slug; editorial permalink cleanup belongs in WordPress rather than silent API rewriting.
-- [ ] Reinstall/retest the candidate package containing the robust SEO-title cleanup.
 - [ ] Unknown slug returns HTTP 404 with `headless_core_news_not_found`.
 - [ ] Pagination parameter behavior validated (`page`, `per_page`).
 - [ ] Ordering parameter behavior validated (`order`, `orderby`).
