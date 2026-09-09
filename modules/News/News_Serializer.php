@@ -77,6 +77,39 @@ final class News_Serializer {
 	}
 
 	/**
+	 * Remove an internal WordPress site-name suffix from a public SEO title.
+	 *
+	 * Headless consumers own their public site-name composition. Yoast may append
+	 * the CMS site's own name to generated titles; forwarding that suffix would
+	 * leak CMS presentation into the provider contract.
+	 *
+	 * @param mixed  $value    Candidate SEO title.
+	 * @param string $fallback Native normalized post title.
+	 * @return string
+	 */
+	private function normalize_seo_title( $value, $fallback ) {
+		$title     = $this->normalize_text( $value );
+		$site_name = $this->normalize_text( get_bloginfo( 'name' ) );
+
+		if ( '' === $title ) {
+			return $fallback;
+		}
+
+		if ( '' !== $site_name ) {
+			$pattern = '/\s*(?:[-–—|·:»]+)\s*' . preg_quote( $site_name, '/' ) . '\s*$/iu';
+			$cleaned = preg_replace( $pattern, '', $title );
+
+			if ( is_string( $cleaned ) && '' !== trim( $cleaned ) ) {
+				$title = trim( $cleaned );
+			} elseif ( 0 === strcasecmp( $title, $site_name ) ) {
+				$title = $fallback;
+			}
+		}
+
+		return $title;
+	}
+
+	/**
 	 * Return normalized featured image metadata.
 	 *
 	 * @param WP_Post $post WordPress post.
@@ -140,11 +173,12 @@ final class News_Serializer {
 	 * @return array<string, mixed>
 	 */
 	private function get_seo( WP_Post $post, array $payload ) {
-		$title       = (string) $payload['title'];
-		$description = (string) $payload['excerpt'];
-		$og_title    = $title;
-		$og_desc     = $description;
-		$source      = 'wordpress';
+		$fallback_title = (string) $payload['title'];
+		$title          = $fallback_title;
+		$description    = (string) $payload['excerpt'];
+		$og_title       = $title;
+		$og_desc        = $description;
+		$source         = 'wordpress';
 
 		if ( function_exists( 'YoastSEO' ) ) {
 			try {
@@ -154,7 +188,7 @@ final class News_Serializer {
 					$source = 'yoast';
 
 					if ( ! empty( $surface->title ) ) {
-						$title = $this->normalize_text( $surface->title );
+						$title = $this->normalize_seo_title( $surface->title, $fallback_title );
 					}
 
 					if ( ! empty( $surface->description ) ) {
@@ -162,7 +196,7 @@ final class News_Serializer {
 					}
 
 					if ( ! empty( $surface->open_graph_title ) ) {
-						$og_title = $this->normalize_text( $surface->open_graph_title );
+						$og_title = $this->normalize_seo_title( $surface->open_graph_title, $title );
 					} else {
 						$og_title = $title;
 					}
