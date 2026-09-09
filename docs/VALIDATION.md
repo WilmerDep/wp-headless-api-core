@@ -35,19 +35,22 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] `GET /wp-json/headless-core/v1/news` returns real native WordPress posts.
 - [x] Collection response contains normalized `items` and `pagination` objects.
 - [x] Default collection page returns 12 items.
-- [x] Runtime pagination reports 83 published public items across 7 pages at the default page size.
+- [x] Initial runtime snapshot reported 83 published public items across 7 pages; a later content snapshot reported 88 items across 8 pages. This confirms pagination is based on the live published inventory rather than a fixed count.
 - [x] News items expose IDs, slugs, titles, excerpts, publication/modification dates, featured images and categories.
 - [x] Featured image metadata is being resolved from the WordPress Media Library.
 - [x] Native WordPress category data is being normalized into the provider contract.
 - [x] JSON Unicode escaping observed in the browser is valid JSON behavior and not a character-encoding failure.
-- [x] Runtime observation identified encoded excerpt entities such as `&hellip;`; serializer normalization was corrected on the feature branch after this test.
-- [ ] Reinstall/retest the candidate package containing the excerpt normalization fix.
-- [ ] `GET /wp-json/headless-core/v1/news/{slug}` validated with a real published slug.
-- [ ] News detail `content` validated with real rendered WordPress HTML.
-- [ ] News detail `seo` payload validated with Yoast active and fallback behavior confirmed.
+- [x] Encoded excerpt entities such as `&hellip;` were normalized; the retested collection now returns decoded plain text such as `[…]`.
+- [x] `GET /wp-json/headless-core/v1/news/{slug}` validated with published post ID `23910`.
+- [x] News detail `content` returns rendered WordPress block HTML.
+- [x] News detail `seo` returns the provider-owned SEO object with Yoast detected as the source.
+- [x] Runtime SEO validation identified the CMS site-name suffix `CMS API HOSGEDOPOL` in Yoast-generated title values. The feature branch now removes a trailing CMS site-name composition before exposing SEO title fields.
+- [x] Legacy content observation: post ID `23916` has a percent-encoded WordPress source slug and decorative mathematical Unicode text. The provider intentionally preserves the native source slug; editorial permalink cleanup belongs in WordPress rather than silent API rewriting.
+- [ ] Reinstall/retest the candidate package containing the CMS SEO-title cleanup.
 - [ ] Unknown slug returns HTTP 404 with `headless_core_news_not_found`.
 - [ ] Pagination parameter behavior validated (`page`, `per_page`).
 - [ ] Ordering parameter behavior validated (`order`, `orderby`).
+- [ ] Yoast-unavailable fallback behavior confirmed.
 
 ### Approval rule
 
