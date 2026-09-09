@@ -218,10 +218,15 @@ final class News_Controller {
 	/**
 	 * Validate collection sort field.
 	 *
+	 * Title ordering is intentionally excluded from the v0.2.0 contract. Legacy
+	 * WordPress titles may contain source entities or decorative Unicode that do
+	 * not sort the same way as the normalized public title returned by the API.
+	 * Date fields provide stable, consumer-relevant ordering for News.
+	 *
 	 * @param mixed $value Request value.
 	 * @return bool
 	 */
 	public function validate_orderby( $value ) {
-		return in_array( (string) $value, array( 'date', 'modified', 'title' ), true );
+		return in_array( (string) $value, array( 'date', 'modified' ), true );
 	}
 }
