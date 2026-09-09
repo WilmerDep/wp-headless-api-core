@@ -30,6 +30,9 @@ jobs:
             php -l "$file"
           done < <(find . -type f -name '*.php' -print0)
 
+      - name: Run isolated News SEO fallback test
+        run: php tests/news-seo-fallback.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
@@ -53,6 +56,7 @@ jobs:
             --exclude='.git' \
             --exclude='.github' \
             --exclude='build' \
+            --exclude='tests' \
             ./ build/wp-headless-api-core/
           cd build
           zip -rq "wp-headless-api-core-v${PLUGIN_VERSION}.zip" wp-headless-api-core
