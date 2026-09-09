@@ -1,4 +1,4 @@
-name: PHP Syntax
+name: Validate and Build
 
 on:
   push:
@@ -14,8 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    name: PHP syntax check
+  validate-build:
+    name: PHP validation and plugin package
     runs-on: ubuntu-latest
 
     steps:
@@ -32,3 +32,23 @@ jobs:
           while IFS= read -r -d '' file; do
             php -l "$file"
           done < <(find . -type f -name '*.php' -print0)
+
+      - name: Build WordPress plugin ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/wp-headless-api-core
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='build' \
+            ./ build/wp-headless-api-core/
+          cd build
+          zip -rq wp-headless-api-core-v0.1.0.zip wp-headless-api-core
+
+      - name: Upload installable plugin ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: wp-headless-api-core-v0.1.0
+          path: build/wp-headless-api-core-v0.1.0.zip
+          if-no-files-found: error
