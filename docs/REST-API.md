@@ -47,7 +47,9 @@ Supported query parameters:
 | `page` | `1` | Integer >= 1 |
 | `per_page` | `12` | Integer from 1 to 50 |
 | `order` | `desc` | `asc` or `desc` |
-| `orderby` | `date` | `date`, `modified`, or `title` |
+| `orderby` | `date` | `date` or `modified` |
+
+`orderby=title` is intentionally not part of the v0.2.0 contract. Legacy WordPress titles can contain source entities, punctuation or decorative Unicode that sort according to the database source value rather than the normalized public title returned by this provider. News consumers currently require stable chronological ordering, so v0.2.0 limits ordering to publication and modification dates.
 
 Collection response:
 
