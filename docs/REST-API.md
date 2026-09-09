@@ -20,9 +20,11 @@ Response contract:
 {
   "ok": true,
   "service": "Headless API Core",
-  "version": "0.1.0"
+  "version": "<installed-plugin-version>"
 }
 ```
+
+The `version` field reports the active plugin version. It was `0.1.0` for the validated Health baseline and is `0.2.0` on the current News candidate line.
 
 No authentication is required for Health. The route still declares an explicit permission callback.
 
