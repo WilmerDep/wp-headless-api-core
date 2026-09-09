@@ -49,11 +49,12 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] Feature branch now uses a more robust provider rule: when Yoast returns the native post title followed by a separator and additional CMS branding, expose the native title instead. This avoids hardcoding institution-specific CMS names while preserving genuinely custom SEO titles.
 - [x] Robust SEO-title cleanup retested successfully on post ID `23910`: both `seo.title` and `seo.openGraph.title` now match the native public post title and no longer expose the internal `CMS API HOSGEDOPOL` suffix.
 - [x] Legacy content observation: post ID `23916` has a percent-encoded WordPress source slug and decorative mathematical Unicode text. The provider intentionally preserves the native source slug; editorial permalink cleanup belongs in WordPress rather than silent API rewriting.
-- [ ] Unknown slug returns HTTP 404 with `headless_core_news_not_found`.
-- [ ] Pagination parameter behavior validated (`page`, `per_page`).
-- [ ] Ordering parameter behavior validated (`order`, `orderby`).
+- [x] Unknown slug runtime test returns `code="headless_core_news_not_found"`, `message="News item not found."` and HTTP status `404`.
+- [x] Pagination runtime test with `page=2&per_page=5` returns exactly five items and reports `page=2`, `perPage=5`, `totalItems=88`, `totalPages=18`.
+- [x] A runtime experiment with `orderby=title&order=asc` reached WordPress title ordering, but the visible normalized titles exposed legacy source-title collation artifacts. Because the current News consumer does not require alphabetical ordering, `title` ordering was removed from the v0.2.0 candidate instead of freezing surprising semantics.
+- [ ] Stable ordering parameter behavior revalidated after narrowing `orderby` to `date` and `modified` only.
 - [ ] Yoast-unavailable fallback behavior confirmed.
 
 ### Approval rule
 
-The News contract remains a v0.2.0 candidate until collection and detail routes, 404 behavior, pagination/order controls, text normalization and SEO fallback behavior are validated on the target CMS. Only after those checks pass should the feature be merged into `develop` and used by the Next.js consumer.
+The News contract remains a v0.2.0 candidate until the narrowed ordering controls and SEO fallback behavior are validated. Only after those checks pass should the feature be merged into `develop` and used by the Next.js consumer.
