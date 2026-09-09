@@ -53,8 +53,8 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] Pagination runtime test with `page=2&per_page=5` returns exactly five items and reports `page=2`, `perPage=5`, `totalItems=88`, `totalPages=18`.
 - [x] A runtime experiment with `orderby=title&order=asc` reached WordPress title ordering, but the visible normalized titles exposed legacy source-title collation artifacts. Because the current News consumer does not require alphabetical ordering, `title` ordering was removed from the v0.2.0 candidate instead of freezing surprising semantics.
 - [x] Narrowed ordering revalidated with `orderby=date&order=asc&per_page=5`: the CMS returned five items in strictly ascending publication order from `2024-03-06` through `2024-06-27`.
-- [ ] Yoast-unavailable fallback behavior confirmed by isolated automated test.
+- [x] Yoast-unavailable fallback behavior is covered by an isolated CI regression test. With no global `YoastSEO()` function, the serializer returns `source="wordpress"`, the native title/excerpt, and the native featured image in Open Graph. The CI job executes this test before packaging and passed on the News feature branch.
 
-### Approval rule
+### Approval
 
-The News contract remains a v0.2.0 candidate until the Yoast-unavailable fallback behavior is validated. Only after that check passes should the feature be merged into `develop` and used by the Next.js consumer.
+The News v0.2.0 candidate has passed the required runtime checks on the HOSGEDOPOL CMS plus the isolated Yoast-unavailable fallback regression test. The feature is approved for merge into `develop` and for consumer integration work in Next.js.
