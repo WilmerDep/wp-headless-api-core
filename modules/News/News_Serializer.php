@@ -77,23 +77,38 @@ final class News_Serializer {
 	}
 
 	/**
-	 * Remove an internal WordPress site-name suffix from a public SEO title.
+	 * Remove CMS presentation branding from a public SEO title.
 	 *
-	 * Headless consumers own their public site-name composition. Yoast may append
-	 * the CMS site's own name to generated titles; forwarding that suffix would
-	 * leak CMS presentation into the provider contract.
+	 * Headless consumers own public site-name composition. Yoast commonly turns
+	 * a post title into "Post title - CMS site name". When the normalized Yoast
+	 * title is simply the provider fallback title followed by a separator and
+	 * extra branding, the provider returns the fallback title. This avoids
+	 * hardcoding any institution or CMS name while preserving genuinely custom
+	 * SEO titles that differ from the native title.
+	 *
+	 * A second pass removes the current WordPress site name when it is available
+	 * and actually appears as the suffix.
 	 *
 	 * @param mixed  $value    Candidate SEO title.
 	 * @param string $fallback Native normalized post title.
 	 * @return string
 	 */
 	private function normalize_seo_title( $value, $fallback ) {
-		$title     = $this->normalize_text( $value );
-		$site_name = $this->normalize_text( get_bloginfo( 'name' ) );
+		$title          = $this->normalize_text( $value );
+		$fallback_title = $this->normalize_text( $fallback );
+		$site_name      = $this->normalize_text( get_bloginfo( 'name' ) );
 
 		if ( '' === $title ) {
-			return $fallback;
+			return $fallback_title;
 		}
+
+		if ( '' !== $fallback_title ) {
+			$native_with_suffix = '/^' . preg_quote( $fallback_title, '/' ) . '\s+(?:[-–—|·:»]+)\s+.+$/iu';
+
+			if ( 1 === preg_match( $native_with_suffix, $title ) ) {
+				return $fallback_title;
+			}
+	}
 
 		if ( '' !== $site_name ) {
 			$pattern = '/\s*(?:[-–—|·:»]+)\s*' . preg_quote( $site_name, '/' ) . '\s*$/iu';
@@ -102,7 +117,7 @@ final class News_Serializer {
 			if ( is_string( $cleaned ) && '' !== trim( $cleaned ) ) {
 				$title = trim( $cleaned );
 			} elseif ( 0 === strcasecmp( $title, $site_name ) ) {
-				$title = $fallback;
+				$title = $fallback_title;
 			}
 		}
 
