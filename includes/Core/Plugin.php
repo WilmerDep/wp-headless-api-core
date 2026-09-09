@@ -7,6 +7,7 @@
 
 namespace HeadlessApiCore\Core;
 
+use HeadlessApiCore\Modules\News\News_Module;
 use HeadlessApiCore\Rest\Health_Controller;
 
 defined( 'ABSPATH' ) || exit;
@@ -38,5 +39,7 @@ final class Plugin {
 
 		$health_controller = new Health_Controller();
 		$health_controller->register();
+
+		News_Module::boot();
 	}
 }
