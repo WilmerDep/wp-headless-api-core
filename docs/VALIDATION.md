@@ -13,10 +13,12 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] Plugin version reported as `0.1.0`.
 - [x] Plugin activated successfully.
 - [x] WordPress Plugins administration remained usable after activation.
-- [ ] `GET /wp-json/headless-core/v1/health` returns HTTP 200.
-- [ ] Health response matches the documented v0.1.0 contract.
+- [x] `GET /wp-json/headless-core/v1/health` returns successfully from the target CMS.
+- [x] Health response matches the documented v0.1.0 contract: `ok=true`, `service="Headless API Core"`, `version="0.1.0"`.
 - [ ] Plugin deactivation/reactivation smoke test completed.
 
-## Approval rule
+## Runtime approval
 
-Bootstrap + Health is considered runtime-approved only after the remaining checks above pass on the target CMS. News development must not begin before Health is validated end-to-end.
+Bootstrap + Health is runtime-approved on the HOSGEDOPOL CMS as of 2026-09-08. News development may begin from this validated provider baseline.
+
+The deactivation/reactivation smoke test remains part of the v0.1.0 release preflight before promoting the milestone to the stable release line.
