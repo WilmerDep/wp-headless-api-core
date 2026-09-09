@@ -89,6 +89,12 @@ Collection response:
 
 Full article HTML is intentionally omitted from the collection response to avoid over-fetching.
 
+### Source slug boundary
+
+`slug` is the native published WordPress `post_name`. Headless API Core does not silently rewrite source slugs because doing so would create a second permalink identity that WordPress cannot resolve natively.
+
+If legacy content contains percent-encoded or otherwise undesirable slugs, correct the permalink in WordPress editorial data before the frontend treats that URL as canonical.
+
 ### `GET /wp-json/headless-core/v1/news/{slug}`
 
 Public, read-only detail endpoint.
@@ -124,6 +130,8 @@ A successful response contains the collection fields plus `content` and `seo`:
 The News detail endpoint exposes a small provider-owned SEO shape rather than leaking Yoast's raw contract to consumers.
 
 When Yoast SEO is available, Headless API Core may use its supported Surfaces API to obtain SEO title/description/Open Graph text. Native WordPress title/excerpt/image values are the fallback.
+
+Yoast-generated title values may append the WordPress CMS site name. The provider removes that trailing CMS site-name composition before returning `seo.title` and `seo.openGraph.title`; the public frontend owns final site-name composition.
 
 The provider intentionally does **not** forward CMS canonical URLs, robots directives, or Schema data in this first News contract. Those values may contain CMS-domain assumptions and require the future configurable public-frontend URL strategy before they can be safely exposed.
 
