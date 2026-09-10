@@ -12,15 +12,34 @@
 - Do not add write endpoints without a concrete requirement.
 - Prefer WordPress Core security primitives over custom equivalents.
 
-## v0.1.0 Health endpoint
+## Public REST boundary
 
-Health is intentionally public and read-only. It exposes only:
+Health is intentionally public and read-only. News collection/detail are also public and read-only but expose only published, non-password-protected content.
 
-- a boolean service state;
-- the generic service name;
-- the plugin contract version.
+No public endpoint exposes filesystem paths, database credentials, integration secrets or private WordPress user-account fields.
 
-It does not expose filesystem paths, server versions, database data, user information, environment values or secrets.
+## News v0.2.2 outbound revalidation
+
+Realtime editorial revalidation is an outbound Provider -> Consumer request, not a new public WordPress write endpoint.
+
+Security rules:
+
+- target URL and shared secret are configured outside Git;
+- `HEADLESS_REVALIDATION_SECRET` must contain at least 32 characters;
+- HTTPS is required by default;
+- request body is signed with HMAC SHA-256;
+- signature input is `<unix timestamp>.<exact raw JSON body>`;
+- signature is sent as `X-Headless-Signature: sha256=<hex>`;
+- timestamp is sent as `X-Headless-Timestamp`;
+- Consumer must reject requests outside its anti-replay window (initial recommendation: 300 seconds);
+- Consumer must use timing-safe signature comparison;
+- secret and signature are never included in public payloads or diagnostic logs;
+- HTTP redirects are not followed by the Provider revalidation client so the configured target must be exact;
+- non-2xx/transport failures never roll back or prevent the WordPress editorial save.
+
+The Consumer must validate authentication before parsing/trusting the lifecycle payload and should reject unsupported resources/events.
+
+See `docs/REVALIDATION.md` for the full signing and lifecycle contract.
 
 ## Future private endpoints
 
