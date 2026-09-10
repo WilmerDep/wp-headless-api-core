@@ -1,37 +1,49 @@
 <?php
 /**
- * Isolated regression test that News provider remains public-only.
+ * Isolated regression test that News provider remains public-only and fresh.
  */
 
 namespace {
 	define( 'ABSPATH', __DIR__ );
-	define( 'OBJECT', 'OBJECT' );
 
+	#[\AllowDynamicProperties]
 	class WP_Post {
 		public $ID = 1;
+		public $post_name = 'test';
 		public $post_status = 'publish';
 		public $post_password = '';
 	}
 
 	class WP_REST_Request {
 		private $params;
+		private $route;
 
-		public function __construct( array $params ) {
+		public function __construct( array $params = array(), $route = '' ) {
 			$this->params = $params;
+			$this->route  = $route;
 		}
 
 		public function get_param( $key ) {
 			return $this->params[ $key ] ?? null;
+		}
+
+		public function get_route() {
+			return $this->route;
 		}
 	}
 
 	class WP_REST_Response {
 		public $data;
 		public $status;
+		public $headers = array();
 
 		public function __construct( $data, $status = 200 ) {
 			$this->data   = $data;
 			$this->status = $status;
+		}
+
+		public function header( $key, $value ) {
+			$this->headers[ $key ] = $value;
 		}
 	}
 
@@ -58,6 +70,19 @@ namespace {
 
 		public function __construct( array $args ) {
 			$GLOBALS['news_query_args'] = $args;
+
+			if ( isset( $args['name'] ) ) {
+				$post = $GLOBALS['news_detail_post'] ?? null;
+
+				if (
+					$post instanceof WP_Post &&
+					'publish' === $post->post_status &&
+					empty( $post->post_password ) &&
+					$post->post_name === $args['name']
+				) {
+					$this->posts = array( $post );
+				}
+			}
 		}
 	}
 
@@ -81,11 +106,6 @@ namespace HeadlessApiCore\Modules\News {
 			unset( $post );
 			return array( 'ok' => true );
 		}
-	}
-
-	function get_page_by_path( $slug, $output, $post_type ) {
-		unset( $slug, $output, $post_type );
-		return $GLOBALS['news_detail_post'];
 	}
 
 	function get_post_status( $post ) {
@@ -117,9 +137,15 @@ namespace HeadlessApiCore\Modules\News {
 		exit( 1 );
 	}
 
+	if ( false !== ( $args['cache_results'] ?? null ) ) {
+		fwrite( STDERR, "News collection must bypass persistent WP_Query result caching.\n" );
+		exit( 1 );
+	}
+
 	foreach ( array( 'draft', 'pending', 'private', 'trash', 'future' ) as $status ) {
-		$post              = new \WP_Post();
-		$post->post_status = $status;
+		$post                = new \WP_Post();
+		$post->post_name     = 'test';
+		$post->post_status   = $status;
 		$GLOBALS['news_detail_post'] = $post;
 		$result = $controller->get_item( new \WP_REST_Request( array( 'slug' => 'test' ) ) );
 
@@ -127,9 +153,15 @@ namespace HeadlessApiCore\Modules\News {
 			fwrite( STDERR, 'News detail exposed non-public status: ' . $status . "\n" );
 			exit( 1 );
 		}
+
+		if ( false !== ( $GLOBALS['news_query_args']['cache_results'] ?? null ) ) {
+			fwrite( STDERR, "News detail must bypass persistent WP_Query result caching.\n" );
+			exit( 1 );
+		}
 	}
 
 	$protected                = new \WP_Post();
+	$protected->post_name     = 'protected';
 	$protected->post_status   = 'publish';
 	$protected->post_password = 'secret';
 	$GLOBALS['news_detail_post'] = $protected;
@@ -141,6 +173,7 @@ namespace HeadlessApiCore\Modules\News {
 	}
 
 	$public                    = new \WP_Post();
+	$public->post_name         = 'public';
 	$public->post_status       = 'publish';
 	$public->post_password     = '';
 	$GLOBALS['news_detail_post'] = $public;
@@ -151,5 +184,35 @@ namespace HeadlessApiCore\Modules\News {
 		exit( 1 );
 	}
 
-	echo "News public visibility test passed.\n";
+	$news_response = new \WP_REST_Response( array( 'ok' => true ), 200 );
+	$controller->prevent_news_http_cache(
+		$news_response,
+		new \WP_REST_Server(),
+		new \WP_REST_Request( array(), '/headless-core/v1/news' )
+	);
+
+	$expected_cache_control = 'no-store, no-cache, must-revalidate, max-age=0';
+	if ( $expected_cache_control !== ( $news_response->headers['Cache-Control'] ?? null ) ) {
+		fwrite( STDERR, "News REST responses must explicitly disable HTTP caching.\n" );
+		exit( 1 );
+	}
+
+	if ( 'no-cache' !== ( $news_response->headers['Pragma'] ?? null ) || '0' !== ( $news_response->headers['Expires'] ?? null ) ) {
+		fwrite( STDERR, "News REST no-cache compatibility headers are missing.\n" );
+		exit( 1 );
+	}
+
+	$other_response = new \WP_REST_Response( array( 'ok' => true ), 200 );
+	$controller->prevent_news_http_cache(
+		$other_response,
+		new \WP_REST_Server(),
+		new \WP_REST_Request( array(), '/headless-core/v1/health' )
+	);
+
+	if ( ! empty( $other_response->headers ) ) {
+		fwrite( STDERR, "News cache policy must not mutate unrelated REST routes.\n" );
+		exit( 1 );
+	}
+
+	echo "News public visibility and Provider freshness test passed.\n";
 }
