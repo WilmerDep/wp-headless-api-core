@@ -19,6 +19,8 @@ namespace {
 namespace HeadlessApiCore\Revalidation {
 	$GLOBALS['headless_revalidation_request'] = null;
 	$GLOBALS['headless_revalidation_delivery'] = null;
+	$GLOBALS['headless_revalidation_transport_error'] = false;
+	$GLOBALS['headless_revalidation_log'] = array();
 
 	function time() {
 		return 1789056000;
@@ -52,6 +54,10 @@ namespace HeadlessApiCore\Revalidation {
 			'args' => $args,
 		);
 
+		if ( ! empty( $GLOBALS['headless_revalidation_transport_error'] ) ) {
+			return new \WP_Error();
+		}
+
 		return array( 'response' => array( 'code' => 204 ) );
 	}
 
@@ -67,6 +73,11 @@ namespace HeadlessApiCore\Revalidation {
 		if ( 'headless_api_core_revalidation_delivery' === $hook ) {
 			$GLOBALS['headless_revalidation_delivery'] = $args;
 		}
+	}
+
+	function error_log( $message ) {
+		$GLOBALS['headless_revalidation_log'][] = $message;
+		return true;
 	}
 
 	require_once dirname( __DIR__ ) . '/includes/Revalidation/Revalidation_Client.php';
@@ -131,5 +142,26 @@ namespace HeadlessApiCore\Revalidation {
 		exit( 1 );
 	}
 
-	echo "News revalidation HMAC signature test passed.\n";
+	// Failure path must be safe: return false, report failure and never throw.
+	$GLOBALS['headless_revalidation_transport_error'] = true;
+	$GLOBALS['headless_revalidation_delivery'] = null;
+	$failed = $client->send( $payload );
+
+	if ( false !== $failed ) {
+		fwrite( STDERR, "Transport failure must return false.\n" );
+		exit( 1 );
+	}
+
+	if ( ! isset( $GLOBALS['headless_revalidation_delivery'][0] ) || false !== $GLOBALS['headless_revalidation_delivery'][0] ) {
+		fwrite( STDERR, "Delivery result action must report transport failure.\n" );
+		exit( 1 );
+	}
+
+	$logs = implode( "\n", $GLOBALS['headless_revalidation_log'] );
+	if ( false !== strpos( $logs, HEADLESS_REVALIDATION_SECRET ) || false !== strpos( $logs, $expected ) ) {
+		fwrite( STDERR, "Secret/signature leaked into failure logs.\n" );
+		exit( 1 );
+	}
+
+	echo "News revalidation HMAC signature and safe-failure test passed.\n";
 }
