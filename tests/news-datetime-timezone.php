@@ -1,10 +1,11 @@
 <?php
 /**
- * Isolated regression test for News editorial timestamps.
+ * Isolated regression test for News editorial timestamps and public author.
  *
  * Verifies that the serializer requests local/site-timezone values from
  * WordPress instead of GMT so late-night publications do not move to the next
- * calendar day for consumers.
+ * calendar day for consumers. It also verifies that only the author's public
+ * display name is exposed.
  */
 
 namespace {
@@ -16,6 +17,9 @@ namespace {
 
 		/** @var string */
 		public $post_name = 'prueba-de-consumo-api-headless';
+
+		/** @var int */
+		public $post_author = 42;
 	}
 }
 
@@ -76,6 +80,18 @@ namespace HeadlessApiCore\Modules\News {
 		return array();
 	}
 
+	function get_the_author_meta( $field, $user_id ) {
+		if ( 'display_name' !== $field ) {
+			throw new \RuntimeException( 'News must request only author display_name.' );
+		}
+
+		if ( 42 !== $user_id ) {
+			throw new \RuntimeException( 'News must resolve the post author ID.' );
+		}
+
+		return 'Autor Editorial';
+	}
+
 	require_once dirname( __DIR__ ) . '/modules/News/News_Serializer.php';
 
 	$post       = new \WP_Post();
@@ -104,5 +120,19 @@ namespace HeadlessApiCore\Modules\News {
 		exit( 1 );
 	}
 
-	echo "News site-timezone timestamp test passed.\n";
+	$expected_author = array( 'name' => 'Autor Editorial' );
+
+	if ( $expected_author !== $summary['author'] ) {
+		fwrite( STDERR, "News public author contract mismatch.\n" );
+		fwrite( STDERR, 'Expected: ' . var_export( $expected_author, true ) . "\n" );
+		fwrite( STDERR, 'Actual: ' . var_export( $summary['author'], true ) . "\n" );
+		exit( 1 );
+	}
+
+	if ( array( 'name' ) !== array_keys( $summary['author'] ) ) {
+		fwrite( STDERR, "News author payload leaked unexpected fields.\n" );
+		exit( 1 );
+	}
+
+	echo "News site-timezone and public-author test passed.\n";
 }
