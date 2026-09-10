@@ -2,27 +2,24 @@
 
 Reusable, modular WordPress plugin for exposing a stable, documented REST contract to decoupled frontends such as Next.js and React.
 
-> Status: News v0.2.2 is the current lifecycle/revalidation patch candidate on `fix/news-revalidation-lifecycle`. The public News GET contract remains backward-compatible with v0.2.1 while v0.2.2 adds signed editorial revalidation delivery. `main` remains the stable release line until CMS + Consumer lifecycle QA passes.
+> Status: News v0.2.2 is the current lifecycle/revalidation patch candidate on `fix/news-revalidation-lifecycle`. The public News GET contract remains backward-compatible with v0.2.1 while v0.2.2 adds Provider freshness hardening plus signed editorial revalidation delivery. `main` remains the stable release line until CMS + Consumer lifecycle QA passes.
 
 ## Goals
 
-- Use WordPress as an editorial CMS, media library, permissions layer and structured content source.
-- Expose a clean REST contract under `/wp-json/headless-core/v1/`.
-- Keep frontend consumers independent from WordPress/PHP implementation details.
-- Keep the core generic and reusable across institutional websites.
-- Prefer WordPress Core APIs and small internal modules over unnecessary third-party dependencies.
+- Keep WordPress as the editorial source of truth.
+- Expose a small, explicit and reusable REST contract.
+- Avoid coupling Consumers to WordPress implementation details.
+- Keep public content endpoints read-only.
+- Preserve a modular structure so future content domains can be added without turning the plugin into one monolith.
+- Document integration, preview, revalidation and security decisions before Consumers depend on them.
 
-## Roadmap
+## Current modules
 
-### v0.1.0 — Bootstrap + Health
+### v0.1.0 — Health
 
 Runtime-validated on the HOSGEDOPOL CMS.
 
-- Installable/activatable plugin.
-- Modular bootstrap.
-- REST namespace `headless-core/v1`.
-- Public read-only `GET /wp-json/headless-core/v1/health` endpoint.
-- Initial architecture, installation, configuration and security documentation.
+- `GET /wp-json/headless-core/v1/health`
 
 ### v0.2.0 — News pilot
 
@@ -34,12 +31,10 @@ Validated on the HOSGEDOPOL CMS and merged into `develop`.
 
 - Same `GET /wp-json/headless-core/v1/news` route.
 - Same `GET /wp-json/headless-core/v1/news/{slug}` route.
-- Native WordPress `post` source.
-- Published, non-password-protected content only.
-- Pagination and deterministic date/modified ordering.
-- `publishedAt` / `modifiedAt` preserve the WordPress site timezone in ISO 8601.
-- Public author shape limited to `author.name` from WordPress `display_name`.
-- Featured image and category normalization.
+- Site-local ISO 8601 editorial timestamps.
+- Minimal public `author.name` contract.
+- Pagination and stable `date|modified` ordering.
+- Featured image metadata and categories.
 - Detail HTML content.
 - Provider-owned SEO shape with optional Yoast-backed values and native WordPress fallback.
 - Deterministic 404 contract.
@@ -49,6 +44,7 @@ Validated on the HOSGEDOPOL CMS and merged into `develop`.
 Current candidate before stable News promotion.
 
 - Keeps the v0.2.1 public GET response shapes unchanged.
+- Makes the Provider authoritative/fresh by bypassing persistent News query-result caching and emitting explicit REST `no-store` headers.
 - Emits generic News lifecycle events after WordPress editorial changes.
 - Signs outbound JSON with HMAC SHA-256.
 - Uses configurable Consumer target URL and shared secret outside Git.
@@ -65,7 +61,8 @@ The public schema is documented in `docs/REST-API.md`. Revalidation signing/life
 Before promoting News to `main`:
 
 - validate all v0.2.2 regression tests and package CI;
-- install the candidate ZIP on the HOSGEDOPOL CMS;
+- install the refreshed candidate ZIP on the HOSGEDOPOL CMS;
+- verify Provider `/news` and `/news/{slug}` reflect editorial state on the first normal refresh;
 - configure the signed Consumer revalidation endpoint and shared secret;
 - validate publish/unpublish/private/trash/future/edit/slug/delete lifecycle behavior end-to-end;
 - confirm webhook failure does not block WordPress editing;
@@ -76,30 +73,32 @@ Hero, Services, Directory, Galleries and Settings remain paused until this News 
 
 ## Architecture principles
 
-- No institution-specific domains, IDs, colors, copy, users or secrets in runtime code.
-- No frontend application code in this repository.
+- Runtime code is generic. Consumer-specific domains, branding, content IDs and secrets do not belong in plugin code.
 - Public content endpoints are read-only.
 - Administrative/private endpoints must use authentication, capability checks and explicit `permission_callback` functions.
 - Breaking REST changes must be documented and versioned.
 - Consumers depend only on the documented REST contract.
 - Outbound revalidation communicates generic resource events; consumers own framework-specific cache invalidation.
+- Provider News responses are source-of-truth responses; framework/application caching belongs at the Consumer boundary.
 
 ## Known consumer
 
-The first real consumer is HOSGEDOPOL. Consumer-specific URLs and integration details belong in `docs/INTEGRATIONS.md` and in the consumer repository; they must not be hardcoded into plugin runtime code.
+HOSGEDOPOL is the first validation Consumer, but it is not hardcoded into runtime code.
 
-Cross-repository validation is allowed when needed to prove a provider contract end-to-end, but implementation ownership remains separated between the provider and consumer repositories.
+Consumer repository:
 
-## Development workflow
+```text
+WilmerDep/hosgedopol-web
+```
 
-- `main`: stable milestones/releases.
-- `develop`: integration/development branch.
-- `feature/*` / `fix/*`: isolated feature and patch work.
+Cross-repository validation is allowed when needed to prove a provider contract, but product-specific frontend implementation remains owned by the Consumer repository.
+
+## Development
 
 GitHub Actions validates PHP syntax, regression tests and produces a version-aware installable WordPress ZIP.
 
-Before a release: validate PHP syntax, activation/deactivation, REST routes, permissions, errors, revalidation security/lifecycle, documentation, changelog, consumer contract compatibility and plugin version.
+Before a release: validate PHP syntax, activation/deactivation, REST routes, permissions, errors, Provider freshness, revalidation security/lifecycle, documentation, changelog, consumer contract compatibility and plugin version.
 
 ## License
 
-To be defined before public distribution/release.
+License pending project decision.
