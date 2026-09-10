@@ -15,13 +15,13 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] WordPress Plugins administration remained usable after activation.
 - [x] `GET /wp-json/headless-core/v1/health` returns successfully from the target CMS.
 - [x] Health response matches the documented v0.1.0 contract: `ok=true`, `service="Headless API Core"`, `version="0.1.0"`.
-- [ ] Plugin deactivation/reactivation smoke test completed.
+- [x] Plugin deactivation/reactivation smoke test completed later during the v0.2.0 release preflight; the plugin reactivated successfully and the public REST namespace remained healthy.
 
 ### Runtime approval
 
-Bootstrap + Health is runtime-approved on the HOSGEDOPOL CMS as of 2026-09-08. News development may begin from this validated provider baseline.
+Bootstrap + Health is runtime-approved on the HOSGEDOPOL CMS as of 2026-09-08. News development proceeded from this validated provider baseline.
 
-The deactivation/reactivation smoke test remains part of the release preflight before promoting the milestone to the stable release line.
+The deactivation/reactivation preflight was completed successfully during the v0.2.0 release gate.
 
 ---
 
@@ -55,9 +55,17 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] Narrowed ordering revalidated with `orderby=date&order=asc&per_page=5`: the CMS returned five items in strictly ascending publication order from `2024-03-06` through `2024-06-27`.
 - [x] Yoast-unavailable fallback behavior is covered by an isolated CI regression test. With no global `YoastSEO()` function, the serializer returns `source="wordpress"`, the native title/excerpt, and the native featured image in Open Graph. The CI job executes this test before packaging and passed on the News feature branch.
 
+### 2026-09-09 — deactivation/reactivation release preflight
+
+- [x] Headless API Core v0.2.0 was manually deactivated and reactivated from WordPress administration.
+- [x] The plugin returned to the active state without blocking WordPress administration.
+- [x] After reactivation, `GET /wp-json/headless-core/v1/health` returned `ok=true`, `service="Headless API Core"`, `version="0.2.0"`.
+- [x] After reactivation, `GET /wp-json/headless-core/v1/news` returned the live paginated News collection successfully.
+- [x] No REST namespace regression was observed after the activation cycle.
+
 ### Approval
 
-The News v0.2.0 candidate has passed the required runtime checks on the HOSGEDOPOL CMS plus the isolated Yoast-unavailable fallback regression test. The feature is approved for merge into `develop` and for consumer integration work in Next.js.
+The News v0.2.0 candidate has passed the required runtime checks on the HOSGEDOPOL CMS, the isolated Yoast-unavailable fallback regression test, and the deactivation/reactivation release preflight. The Provider side is ready for final release gating once the Consumer visual/staging QA is confirmed.
 
 ---
 
