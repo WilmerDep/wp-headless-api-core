@@ -24,17 +24,17 @@ Response contract:
 }
 ```
 
-The `version` field reports the active plugin version. It was `0.1.0` for the validated Health baseline and is `0.2.0` on the current News candidate line.
+The `version` field reports the active plugin version. It was `0.1.0` for the validated Health baseline, `0.2.0` for the first News candidate deployed to HOSGEDOPOL, and is `0.2.1` on the current News patch candidate.
 
 No authentication is required for Health. The route still declares an explicit permission callback.
 
 ---
 
-## News — v0.2.0 candidate contract
+## News — v0.2.1 candidate contract
 
 News wraps the native WordPress `post` type. The provider exposes published, non-password-protected posts only.
 
-The contract below is implemented on the News feature line and is not considered frozen until runtime validation on the target CMS is completed.
+v0.2.1 keeps the same collection and detail routes introduced in v0.2.0 while correcting editorial timestamp semantics and adding a minimal public author object. The contract remains backward-compatible for existing consumers because no v0.2.0 fields or routes are removed.
 
 ### `GET /wp-json/headless-core/v1/news`
 
@@ -49,7 +49,7 @@ Supported query parameters:
 | `order` | `desc` | `asc` or `desc` |
 | `orderby` | `date` | `date` or `modified` |
 
-`orderby=title` is intentionally not part of the v0.2.0 contract. Legacy WordPress titles can contain source entities, punctuation or decorative Unicode that sort according to the database source value rather than the normalized public title returned by this provider. News consumers currently require stable chronological ordering, so v0.2.0 limits ordering to publication and modification dates.
+`orderby=title` is intentionally not part of the v0.2.x contract. Legacy WordPress titles can contain source entities, punctuation or decorative Unicode that sort according to the database source value rather than the normalized public title returned by this provider. News consumers currently require stable chronological ordering, so v0.2.x limits ordering to publication and modification dates.
 
 Collection response:
 
@@ -61,8 +61,8 @@ Collection response:
       "slug": "noticia-ejemplo",
       "title": "Noticia ejemplo",
       "excerpt": "Resumen público de la noticia.",
-      "publishedAt": "2026-09-08T18:30:00+00:00",
-      "modifiedAt": "2026-09-08T19:10:00+00:00",
+      "publishedAt": "2026-09-09T23:31:00-04:00",
+      "modifiedAt": "2026-09-09T23:45:00-04:00",
       "featuredImage": {
         "url": "https://cms.example.org/wp-content/uploads/example.jpg",
         "alt": "Texto alternativo",
@@ -75,7 +75,10 @@ Collection response:
           "slug": "noticias",
           "name": "Noticias"
         }
-      ]
+      ],
+      "author": {
+        "name": "Display Name"
+      }
     }
   ],
   "pagination": {
@@ -90,6 +93,36 @@ Collection response:
 `featuredImage` is `null` when no featured image exists. `categories` is always an array.
 
 Full article HTML is intentionally omitted from the collection response to avoid over-fetching.
+
+### Editorial date/time boundary
+
+`publishedAt` and `modifiedAt` are ISO 8601 timestamps representing the date and time in the timezone configured for the WordPress site. The returned value includes the corresponding UTC offset.
+
+For example, if an editor publishes at `2026-09-09 23:31` while the WordPress site timezone is UTC-04:00, the provider returns:
+
+```text
+2026-09-09T23:31:00-04:00
+```
+
+The provider does not force these editorial timestamps to GMT/UTC. This preserves the same editorial calendar day and clock time that WordPress displays to editors and prevents late-night publications from appearing on the next day in consumers.
+
+Ordering is still delegated to WordPress through `orderby=date|modified` and `order=asc|desc`; changing timestamp serialization does not alter the underlying query ordering.
+
+### Public author boundary
+
+Every News summary/detail includes:
+
+```json
+{
+  "author": {
+    "name": "Display Name"
+  }
+}
+```
+
+`author.name` comes exclusively from the WordPress author's public `display_name`.
+
+The News contract intentionally does **not** expose author email, login, username, password/credential data, roles, capabilities or other internal user-account fields.
 
 ### Source slug boundary
 
@@ -110,10 +143,13 @@ A successful response contains the collection fields plus `content` and `seo`:
   "title": "Noticia ejemplo",
   "excerpt": "Resumen público de la noticia.",
   "content": "<p>Contenido HTML renderizado por WordPress.</p>",
-  "publishedAt": "2026-09-08T18:30:00+00:00",
-  "modifiedAt": "2026-09-08T19:10:00+00:00",
+  "publishedAt": "2026-09-09T23:31:00-04:00",
+  "modifiedAt": "2026-09-09T23:45:00-04:00",
   "featuredImage": null,
   "categories": [],
+  "author": {
+    "name": "Display Name"
+  },
   "seo": {
     "source": "wordpress",
     "title": "Noticia ejemplo",
