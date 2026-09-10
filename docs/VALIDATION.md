@@ -58,3 +58,66 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 ### Approval
 
 The News v0.2.0 candidate has passed the required runtime checks on the HOSGEDOPOL CMS plus the isolated Yoast-unavailable fallback regression test. The feature is approved for merge into `develop` and for consumer integration work in Next.js.
+
+---
+
+## Cross-repository validation — HOSGEDOPOL Consumer
+
+Consumer repository: `WilmerDep/hosgedopol-web`
+
+Consumer branch: `feature/news-headless-consumer`
+
+Consumer PR: `#2 — feat: connect public News to Headless API Core`
+
+Provider baseline: News v0.2.0 contract from `wp-headless-api-core/develop`.
+
+### 2026-09-09
+
+The Provider was exercised by a real Consumer integration without adding Consumer-specific runtime behavior to this plugin.
+
+Consumer workflow `Frontend Build #30` (`run 34424685876`) completed with `success` and included the following independent checkpoints:
+
+- [x] `Validate live Headless News contract`.
+- [x] `Build production bundle`.
+- [x] `Smoke test public News consumer`.
+
+The live contract smoke validated against the deployed WordPress CMS:
+
+- [x] `/headless-core/v1/health` returns a healthy Provider response.
+- [x] `/headless-core/v1/news` returns a valid paginated collection.
+- [x] a collection item can be resolved through `/headless-core/v1/news/{slug}`.
+- [x] detail content and SEO objects satisfy the Consumer's expected contract.
+- [x] an unknown News slug returns HTTP 404 with `headless_core_news_not_found`.
+
+The Consumer runtime smoke then exercised the built Next.js application and confirmed the technical path:
+
+```text
+WordPress CMS
+  -> Headless API Core
+  -> Consumer adapter
+  -> Next.js production runtime
+  -> public News/search routes
+```
+
+### Scope boundary
+
+This cross-repository wiring is recorded here because it validates the plugin contract end-to-end. The Consumer application has its own development workstream and is not owned by this plugin repository.
+
+Future Consumer-side UI/backend work should remain in its own project unless another cross-repository change is specifically required to validate a Provider contract. Any such exception must be documented in both repositories.
+
+### Remaining gates outside the Provider
+
+The following remain Consumer/release concerns rather than failures of the v0.2.0 Provider contract:
+
+- [ ] visual QA of News surfaces;
+- [ ] staging smoke test at `dev.hosgedopol.gob.do`;
+- [ ] migration of the one local-only News article into WordPress before removing Consumer fallbacks;
+- [ ] final Consumer cutover and fallback removal.
+
+The local-only article is currently identified by slug:
+
+```text
+visita-del-director-al-hospital-general-docente-de-la-policia-nacional
+```
+
+Its transport into WordPress is expected to use Zippy or WXR outside the permanent Headless API Core runtime.
