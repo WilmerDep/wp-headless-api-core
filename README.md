@@ -2,7 +2,7 @@
 
 Reusable, modular WordPress plugin for exposing a stable, documented REST contract to decoupled frontends such as Next.js and React.
 
-> Status: News v0.2.1 is the current patch candidate on `fix/news-site-timezone`. Automated CI/package validation is green and live collection QA on HOSGEDOPOL has confirmed site-local timestamps, public author output and chronological ordering. `main` remains the stable release line until final detail/404 and Consumer QA complete.
+> Status: News v0.2.2 is the current lifecycle/revalidation patch candidate on `fix/news-revalidation-lifecycle`. The public News GET contract remains backward-compatible with v0.2.1 while v0.2.2 adds signed editorial revalidation delivery. `main` remains the stable release line until CMS + Consumer lifecycle QA passes.
 
 ## Goals
 
@@ -28,9 +28,9 @@ Runtime-validated on the HOSGEDOPOL CMS.
 
 Implemented and merged into `develop`, but not promoted to `main` because final Consumer QA found a UTC/GMT serialization defect for late-night editorial timestamps.
 
-### v0.2.1 — News patch candidate
+### v0.2.1 — News timezone + author patch
 
-Current candidate before stable promotion.
+Validated on the HOSGEDOPOL CMS and merged into `develop`.
 
 - Same `GET /wp-json/headless-core/v1/news` route.
 - Same `GET /wp-json/headless-core/v1/news/{slug}` route.
@@ -43,21 +43,36 @@ Current candidate before stable promotion.
 - Detail HTML content.
 - Provider-owned SEO shape with optional Yoast-backed values and native WordPress fallback.
 - Deterministic 404 contract.
-- Runtime collection validation on the HOSGEDOPOL CMS confirmed the late-night timezone fix, modified timestamp offset, public author privacy boundary and descending chronological ordering.
 
-The public schema is documented in `docs/REST-API.md`. Runtime evidence lives in `docs/VALIDATION.md` and consumer relationship details in `docs/INTEGRATIONS.md`.
+### v0.2.2 — News editorial lifecycle + signed revalidation
+
+Current candidate before stable News promotion.
+
+- Keeps the v0.2.1 public GET response shapes unchanged.
+- Emits generic News lifecycle events after WordPress editorial changes.
+- Signs outbound JSON with HMAC SHA-256.
+- Uses configurable Consumer target URL and shared secret outside Git.
+- Covers `draft/future/publish/private/trash`, published edits, slug changes and permanent deletion.
+- Aggregates overlapping WordPress hooks into one event per post/request.
+- Does not block or roll back WordPress saves when webhook delivery fails.
+- Keeps `/news` and `/news/{slug}` public-only regardless of webhook state.
+- Supports a short Consumer TTL (about 60 seconds) as failure fallback.
+
+The public schema is documented in `docs/REST-API.md`. Revalidation signing/lifecycle details live in `docs/REVALIDATION.md`. Runtime evidence lives in `docs/VALIDATION.md` and consumer relationship details in `docs/INTEGRATIONS.md`.
 
 ### Current release gate
 
 Before promoting News to `main`:
 
-- confirm `/health` reports v0.2.1;
-- revalidate live News detail and unknown-slug 404 on v0.2.1;
-- complete Consumer visual/staging QA against the corrected contract;
-- verify final CI/package artifact;
-- merge the patch into `develop` and then promote the validated milestone to `main`.
+- validate all v0.2.2 regression tests and package CI;
+- install the candidate ZIP on the HOSGEDOPOL CMS;
+- configure the signed Consumer revalidation endpoint and shared secret;
+- validate publish/unpublish/private/trash/future/edit/slug/delete lifecycle behavior end-to-end;
+- confirm webhook failure does not block WordPress editing;
+- confirm the Provider continues exposing only public News;
+- complete final Consumer staging QA.
 
-Hero, Services, Directory, Galleries and Settings remain deferred until News is fully closed.
+Hero, Services, Directory, Galleries and Settings remain paused until this News lifecycle gate is fully closed.
 
 ## Architecture principles
 
@@ -67,6 +82,7 @@ Hero, Services, Directory, Galleries and Settings remain deferred until News is 
 - Administrative/private endpoints must use authentication, capability checks and explicit `permission_callback` functions.
 - Breaking REST changes must be documented and versioned.
 - Consumers depend only on the documented REST contract.
+- Outbound revalidation communicates generic resource events; consumers own framework-specific cache invalidation.
 
 ## Known consumer
 
@@ -82,7 +98,7 @@ Cross-repository validation is allowed when needed to prove a provider contract 
 
 GitHub Actions validates PHP syntax, regression tests and produces a version-aware installable WordPress ZIP.
 
-Before a release: validate PHP syntax, activation/deactivation, REST routes, permissions, errors, documentation, changelog, consumer contract compatibility and plugin version.
+Before a release: validate PHP syntax, activation/deactivation, REST routes, permissions, errors, revalidation security/lifecycle, documentation, changelog, consumer contract compatibility and plugin version.
 
 ## License
 
