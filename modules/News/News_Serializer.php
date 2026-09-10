@@ -24,8 +24,8 @@ final class News_Serializer {
 			'slug'          => (string) $post->post_name,
 			'title'         => $this->normalize_text( get_the_title( $post ) ),
 			'excerpt'       => $this->get_excerpt( $post ),
-			'publishedAt'   => get_post_time( DATE_ATOM, true, $post ),
-			'modifiedAt'    => get_post_modified_time( DATE_ATOM, true, $post ),
+			'publishedAt'   => get_post_time( DATE_ATOM, false, $post ),
+			'modifiedAt'    => get_post_modified_time( DATE_ATOM, false, $post ),
 			'featuredImage' => $this->get_featured_image( $post ),
 			'categories'    => $this->get_categories( $post ),
 		);
@@ -108,7 +108,7 @@ final class News_Serializer {
 			if ( 1 === preg_match( $native_with_suffix, $title ) ) {
 				return $fallback_title;
 			}
-	}
+		}
 
 		if ( '' !== $site_name ) {
 			$pattern = '/\s*(?:[-–—|·:»]+)\s*' . preg_quote( $site_name, '/' ) . '\s*$/iu';
