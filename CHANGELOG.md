@@ -14,14 +14,17 @@ The project follows Semantic Versioning.
 - HMAC SHA-256 signing using `X-Headless-Timestamp` and `X-Headless-Signature`.
 - News editorial lifecycle observer covering public status transitions, published edits, slug changes, category changes, featured-image changes, Yoast SEO meta changes and permanent deletion.
 - Request-local event aggregation so overlapping WordPress hooks normally produce one revalidation delivery per post/save.
-- Isolated regression coverage for HMAC signing, public-only visibility and News lifecycle event semantics.
+- Isolated regression coverage for HMAC signing, public-only visibility, Provider freshness and News lifecycle event semantics.
 - Reusable live smoke options for asserting that a known slug is public or absent after editorial transitions.
+- Explicit News REST `Cache-Control: no-store, no-cache, must-revalidate, max-age=0` policy, plus compatibility no-cache headers, so the Provider remains the fresh source of truth even when browsers/reverse proxies sit in front of WordPress.
 
 #### Changed
 
 - Plugin candidate version bumped to `0.2.2`.
 - Revalidation configuration is now documented through `HEADLESS_REVALIDATION_URL`, `HEADLESS_REVALIDATION_SECRET` and optional `HEADLESS_REVALIDATION_TIMEOUT`.
 - News public GET contracts remain backward-compatible with v0.2.1; v0.2.2 adds an outbound lifecycle channel rather than changing `/news` response shapes.
+- News collection and detail queries bypass persistent `WP_Query` result caching with `cache_results=false` so editorial status changes are reflected at the Provider boundary immediately.
+- News detail lookup now uses an explicit fresh published-only `WP_Query` instead of a cached path lookup.
 - Hero and later modules remain paused until this News release gate closes.
 
 #### Security
@@ -34,7 +37,7 @@ The project follows Semantic Versioning.
 
 #### Pending validation
 
-- CI/package for the complete v0.2.2 candidate.
+- Real CMS Provider freshness after editorial transitions: one normal refresh of `/news` and `/news/{slug}` must reflect the current WordPress state without waiting for a cache TTL.
 - Real CMS lifecycle transitions: draft/publish/private/trash/future/edit/slug/delete.
 - Real signed delivery against the HOSGEDOPOL Consumer endpoint.
 - Failure-path test with Consumer endpoint unavailable/invalid.
