@@ -32,7 +32,7 @@ No authentication is required for Health. The route still declares an explicit p
 
 News wraps the native WordPress `post` type. The Provider exposes published, non-password-protected posts only.
 
-v0.2.2 keeps the same public GET routes and response shapes validated in v0.2.1. The v0.2.2 change is the addition of a **signed outbound editorial revalidation channel**; it does not add a public mutation endpoint or expose Consumer internals through REST.
+v0.2.2 keeps the same public GET routes and response shapes validated in v0.2.1. The v0.2.2 change is the addition of a **signed outbound editorial revalidation channel** and Provider freshness hardening; it does not add a public mutation endpoint or expose Consumer internals through REST.
 
 ### `GET /wp-json/headless-core/v1/news`
 
@@ -103,6 +103,20 @@ has_password = false
 Draft, pending, private, trash, future-before-publication and password-protected posts are not public News items.
 
 The realtime revalidation channel does not weaken or replace this rule; it only helps Consumers discard stale cache sooner after WordPress changes the source-of-truth state.
+
+### Provider freshness/cache boundary
+
+The Provider itself is an authoritative source and must not intentionally serve a stale editorial snapshot. News collection and detail queries therefore bypass persistent `WP_Query` result caching, and News REST responses apply:
+
+```text
+Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+Pragma: no-cache
+Expires: 0
+```
+
+This policy applies to News success responses and News REST errors/404s. Consumer applications may still cache News according to their own documented strategy, including signed on-demand invalidation plus a short TTL fallback.
+
+If a hosting/CDN layer was caching News before this policy was deployed, purge that legacy cache once during rollout so subsequent origin responses can establish the new no-store policy.
 
 ### Editorial date/time boundary
 
