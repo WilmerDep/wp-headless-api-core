@@ -34,7 +34,7 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] Collection/detail/404 and real Consumer rendering were revalidated.
 - [x] v0.2.1 merged into `develop`.
 
-Final Consumer QA then exposed a separate cache-lifecycle problem: WordPress/Provider correctly removed a draft/trashed item while a cached Consumer collection could retain the stale card temporarily. That finding opened v0.2.2 rather than weakening the Provider public-visibility rules.
+Final Consumer QA then exposed a separate cache-lifecycle problem. Follow-up runtime testing also showed that the public Provider `/news` response itself could remain stale for several refreshes after an editorial transition, so v0.2.2 now hardens both Provider freshness and Consumer revalidation rather than treating the issue as Consumer-only.
 
 ---
 
@@ -54,7 +54,7 @@ Issue:
 
 ### Scope
 
-v0.2.2 keeps the v0.2.1 public GET contract compatible and adds an authenticated outbound lifecycle channel so decoupled Consumers can invalidate cache as WordPress editorial state changes.
+v0.2.2 keeps the v0.2.1 public GET contract compatible, hardens Provider freshness, and adds an authenticated outbound lifecycle channel so decoupled Consumers can invalidate cache as WordPress editorial state changes.
 
 Hero, Services, Directory, Galleries and Settings remain paused until this gate closes.
 
@@ -73,6 +73,25 @@ Automated regression coverage confirms:
 - [x] normal published public detail remains available.
 
 Revalidation does not make private editorial states public. It only accelerates Consumer cache convergence.
+
+### Provider freshness hardening
+
+Runtime finding on HOSGEDOPOL before the hardening patch:
+
+- [x] a `publish -> draft` transition eventually disappeared from the Provider and Consumer;
+- [x] the Provider itself could require multiple refreshes before `/news` reflected the new state;
+- [x] this proved the stale behavior was not exclusively a Next.js/browser cache concern.
+
+Candidate hardening now enforces:
+
+- [x] collection `WP_Query` uses `cache_results=false`;
+- [x] detail uses an explicit published-only `WP_Query` with `cache_results=false` instead of a path lookup that may participate in persistent object caching;
+- [x] News REST success responses receive `Cache-Control: no-store, no-cache, must-revalidate, max-age=0`;
+- [x] News REST errors/404s receive the same policy through `rest_post_dispatch`;
+- [x] compatibility headers `Pragma: no-cache` and `Expires: 0` are included;
+- [x] unrelated REST routes are not modified by the News cache policy.
+
+A one-time host/CDN cache purge may be required when deploying this hardening if an upstream layer already cached the old Provider response. After rollout, one normal refresh of `/news` and `/news/{slug}` must reflect the current WordPress state without waiting for a TTL.
 
 ### Lifecycle implementation
 
@@ -164,16 +183,16 @@ Consumer requirements are documented in `docs/REVALIDATION.md`, including timing
 
 ### Automated CI checkpoint
 
-Workflow:
+Previous workflow checkpoint:
 
 ```text
-Validate and Build #89
-Run ID: 34531701858
-Commit: c6af55ba27d8f7136b3fc415e33c18b7299f785b
+Validate and Build #98
+Run ID: 34532197216
+Commit: 7f0eb0c213c8b03fed232bf7a8fada078f6cf8cd
 Result: SUCCESS
 ```
 
-At this checkpoint the workflow passed:
+That checkpoint passed:
 
 - [x] PHP lint;
 - [x] News SEO fallback test;
@@ -186,7 +205,7 @@ At this checkpoint the workflow passed:
 - [x] v0.2.2 ZIP build;
 - [x] artifact upload.
 
-Documentation changes after this checkpoint trigger a later CI run; the **latest candidate-head run must also be green before installation/merge**.
+The Provider freshness hardening above was added after that checkpoint, so the **latest candidate-head CI must pass again** before the refreshed ZIP is installed on the CMS.
 
 ### Reusable live smoke
 
@@ -209,6 +228,7 @@ Consumer staging: `https://dev.hosgedopol.gob.do`
 
 The following checks remain required on the real CMS + Consumer before v0.2.2 can merge/promote:
 
+- [ ] After deploying Provider freshness hardening, `publish -> draft` is reflected by `/news` on the first normal refresh without clearing browser cache manually.
 - [ ] Create a News item as draft → absent from Provider and Consumer.
 - [ ] draft → publish → appears practically immediately.
 - [ ] publish → draft → disappears practically immediately and detail is 404.
@@ -228,4 +248,4 @@ The following checks remain required on the real CMS + Consumer before v0.2.2 ca
 
 v0.2.2 is **implementation/automated-test ready but not runtime-approved yet**.
 
-Do not merge the lifecycle candidate into `develop`, promote News to `main`, or resume Hero until the signed HOSGEDOPOL Consumer endpoint is configured and the real lifecycle checklist above passes.
+Do not merge the lifecycle candidate into `develop`, promote News to `main`, or resume Hero until Provider freshness + signed HOSGEDOPOL Consumer revalidation both pass the real lifecycle checklist above.
