@@ -41,8 +41,13 @@ final class Revalidation_Client {
 		$url    = $this->get_url();
 		$secret = $this->get_secret();
 
+		// A completely unconfigured installation simply has revalidation disabled.
+		if ( empty( $url ) && empty( $secret ) ) {
+			return false;
+		}
+
 		if ( empty( $url ) || empty( $secret ) ) {
-			$this->log_failure( 'Revalidation skipped because URL or secret is not configured.' );
+			$this->log_failure( 'Revalidation is partially configured; both URL and secret are required.' );
 			return false;
 		}
 
@@ -74,11 +79,11 @@ final class Revalidation_Client {
 				'redirection' => 0,
 				'blocking'    => true,
 				'headers'     => array(
-					'Content-Type'           => 'application/json; charset=utf-8',
-					'Accept'                 => 'application/json',
-					self::TIMESTAMP_HEADER   => $timestamp,
-					self::SIGNATURE_HEADER   => 'sha256=' . $signature,
-					'User-Agent'             => 'Headless-API-Core/' . ( defined( 'HEADLESS_API_CORE_VERSION' ) ? HEADLESS_API_CORE_VERSION : 'unknown' ),
+					'Content-Type'         => 'application/json; charset=utf-8',
+					'Accept'               => 'application/json',
+					self::TIMESTAMP_HEADER => $timestamp,
+					self::SIGNATURE_HEADER => 'sha256=' . $signature,
+					'User-Agent'           => 'Headless-API-Core/' . ( defined( 'HEADLESS_API_CORE_VERSION' ) ? HEADLESS_API_CORE_VERSION : 'unknown' ),
 				),
 				'body'        => $body,
 			)
