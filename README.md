@@ -2,7 +2,7 @@
 
 Reusable, modular WordPress plugin for exposing a stable, documented REST contract to decoupled frontends such as Next.js and React.
 
-> Status: v0.2.0 News is merged into `develop`, runtime-validated on the first real CMS and technically validated end-to-end from WordPress through the HOSGEDOPOL Next.js consumer. `main` remains the stable release line and has not yet been promoted to v0.2.0.
+> Status: News v0.2.0 was runtime-validated and integrated with the first real Consumer, but final QA exposed a WordPress timezone serialization defect before stable promotion. The current release candidate is **v0.2.1**, scoped exclusively to News: site-timezone timestamps plus a minimal public author object. `main` remains the stable release line.
 
 ## Goals
 
@@ -24,9 +24,9 @@ Runtime-validated on the HOSGEDOPOL CMS.
 - Public read-only `GET /wp-json/headless-core/v1/health` endpoint.
 - Initial architecture, installation, configuration and security documentation.
 
-### v0.2.0 — News pilot
+### v0.2.x — News pilot
 
-Implemented and merged into `develop`.
+Implemented on the development line and undergoing final release validation.
 
 - `GET /wp-json/headless-core/v1/news`
 - `GET /wp-json/headless-core/v1/news/{slug}`
@@ -37,20 +37,23 @@ Implemented and merged into `develop`.
 - Detail HTML content.
 - Provider-owned SEO shape with optional Yoast-backed values and native WordPress fallback.
 - Deterministic 404 contract.
+- Editorial `publishedAt` / `modifiedAt` serialized as ISO 8601 in the WordPress site timezone.
+- Minimal public author shape: `author.name` from WordPress `display_name` only.
 - Runtime validation on the HOSGEDOPOL CMS.
 - Technical Provider → Consumer validation against the HOSGEDOPOL Next.js integration.
 
 The public schema is documented in `docs/REST-API.md`. Runtime evidence lives in `docs/VALIDATION.md` and consumer relationship details in `docs/INTEGRATIONS.md`.
 
-### Next release gate
+### Current release gate — v0.2.1
 
-Before promoting v0.2.0 from `develop` to `main`:
+Before promoting News to `main`:
 
-- complete the pending plugin deactivation/reactivation smoke test;
-- complete consumer visual/staging QA for News;
-- verify documentation and changelog are current;
-- verify CI/package artifact one final time;
-- promote the validated milestone to `main`.
+- CI/package for v0.2.1 must pass;
+- install the v0.2.1 candidate ZIP on the target CMS;
+- verify site-timezone `publishedAt` / `modifiedAt` on the real late-night QA case;
+- verify `author.name` in collection and detail;
+- revalidate chronological ordering, detail and 404;
+- revalidate the HOSGEDOPOL Consumer visual/staging QA against v0.2.1.
 
 Hero, Services, Directory, Galleries and Settings remain deferred until the News pipeline is fully closed.
 
@@ -73,7 +76,7 @@ Cross-repository validation is allowed when needed to prove a provider contract 
 
 - `main`: stable milestones/releases.
 - `develop`: integration/development branch.
-- `feature/*`: isolated feature work.
+- `feature/*` / `fix/*`: isolated work.
 
 GitHub Actions validates PHP syntax, regression tests and produces a version-aware installable WordPress ZIP.
 
