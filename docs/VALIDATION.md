@@ -160,15 +160,24 @@ The second argument forced GMT/UTC serialization. For a UTC-04:00 WordPress inst
 - [x] CI/package passed on branch run `34434441626` and PR run `34434523736`.
 - [x] PR run generated artifact `wp-headless-api-core-v0.2.1`, SHA-256 `6a32bf6ab29e00778f0f8e554a5128aa5b5c230159a033feb2c4c5287717c338`.
 
+### 2026-09-09 — live collection validation
+
+- [x] Candidate v0.2.1 installed on the HOSGEDOPOL CMS and `/news` returned the live collection.
+- [x] Late-night test post `prueba-de-consumo-api-headless` returned `publishedAt="2026-09-09T23:31:20-04:00"`, preserving the editorial calendar day and site offset.
+- [x] The same post returned `modifiedAt="2026-09-09T23:34:04-04:00"`.
+- [x] Collection payload exposed `author.name` only; the test post returned `HOSGEDOPOL` and other visible posts returned editorial display names such as `Jessica Tejada`.
+- [x] No email, login/username, roles, capabilities or other author-account fields were visible in the public author object.
+- [x] Visible collection order remained descending by publication date/time: the 2026-09-09 test post preceded 2026-08-03 and 2026-07-31 items.
+
 ### Required live validation after installing v0.2.1
 
 - [ ] `/health` reports plugin version `0.2.1`.
-- [ ] `/news` returns the real collection successfully.
-- [ ] The known late-night test post preserves `2026-09-09` and returns the expected site offset (HOSGEDOPOL currently expects `-04:00`).
-- [ ] `modifiedAt` carries the WordPress site timezone offset.
-- [ ] `author.name` exists in collection and matches the editorial author's `display_name`.
+- [x] `/news` returns the real collection successfully.
+- [x] The known late-night test post preserves `2026-09-09` and returns the expected site offset `-04:00`.
+- [x] `modifiedAt` carries the WordPress site timezone offset.
+- [x] `author.name` exists in collection and matches the editorial author's `display_name`.
 - [ ] `author.name` exists in detail and no additional author-account fields are exposed.
-- [ ] Collection remains correctly ordered by publication date/time.
+- [x] Collection remains correctly ordered by publication date/time in the observed descending collection sample.
 - [ ] `/news/{slug}` detail continues to return content and SEO correctly.
 - [ ] Unknown slug still returns HTTP 404 with `headless_core_news_not_found`.
 - [x] CI/package for v0.2.1 passes.
@@ -176,4 +185,4 @@ The second argument forced GMT/UTC serialization. For a UTC-04:00 WordPress inst
 
 ### Candidate status
 
-v0.2.1 is a backward-compatible News patch candidate. Automated CI/package validation is green. Stable promotion remains blocked until the live CMS and HOSGEDOPOL Consumer checks above are completed.
+v0.2.1 is a backward-compatible News patch candidate. Collection-side runtime validation is now passing for timezone, modified timestamp, public author privacy boundary and observed date ordering. Stable promotion remains blocked until Health version, detail/404 and HOSGEDOPOL Consumer QA are completed.
