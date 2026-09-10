@@ -72,7 +72,7 @@ final class Revalidation_Client {
 		$signature = hash_hmac( 'sha256', $timestamp . '.' . $body, $secret );
 		$timeout   = $this->get_timeout();
 
-		$response = wp_remote_post(
+		$response = wp_safe_remote_post(
 			$url,
 			array(
 				'timeout'     => $timeout,
