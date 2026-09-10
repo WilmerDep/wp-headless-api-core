@@ -6,17 +6,34 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### Changed
+### News v0.2.1 candidate
 
-- Documentation aligned with the validated v0.2.0 News state on `develop`.
-- HOSGEDOPOL consumer integration boundary and end-to-end validation evidence recorded.
+#### Added
 
-### Pending release gate
+- Public `author` object on News collection and detail payloads.
+- `author.name` is sourced exclusively from the post author's WordPress `display_name`.
+- Isolated regression coverage for News site-timezone timestamps and the public-author data boundary.
+- Reusable live News smoke test covering health, collection, chronological ordering, detail, public author, timestamp offsets and deterministic 404 behavior.
 
-- Complete plugin deactivation/reactivation smoke test on the target CMS.
-- Complete consumer visual/staging QA for News.
-- Perform final CI/package artifact verification.
-- Promote v0.2.0 from `develop` to `main` after the release gate passes.
+#### Fixed
+
+- `publishedAt` no longer forces GMT/UTC. It now preserves the date/time in the timezone configured for the WordPress site and returns ISO 8601 with the corresponding offset.
+- `modifiedAt` now follows the same WordPress site-timezone semantics.
+- Late-night editorial publications no longer move to the next calendar day merely because the Provider serialized them in UTC.
+
+#### Security / privacy
+
+- News author serialization exposes only `display_name` as `author.name`.
+- Email, login/username, roles, capabilities, credentials and other internal WordPress user fields are not exposed.
+
+#### Validation pending
+
+- Install the v0.2.1 candidate ZIP on the HOSGEDOPOL CMS.
+- Confirm the known `09/09/2026 23:31` editorial case returns `2026-09-09T23:31:00-04:00`.
+- Confirm `modifiedAt` carries the configured WordPress site offset.
+- Confirm `author.name` matches the editorial author in collection and detail.
+- Revalidate collection chronological ordering, detail and 404 on the live CMS.
+- Re-run HOSGEDOPOL Consumer QA against the corrected Provider before stable promotion.
 
 ## [0.2.0] - 2026-09-09
 
@@ -50,10 +67,11 @@ The project follows Semantic Versioning.
 - Yoast-unavailable fallback regression test passed in CI.
 - News feature merged into `develop`.
 - Technical Provider → Consumer integration passed through the HOSGEDOPOL Next.js CI smoke path.
+- Plugin deactivation/reactivation preflight passed with `/health` and `/news` remaining available after reactivation.
 
-### Not yet promoted
+### Superseded before stable promotion
 
-- `main` has not yet been promoted to v0.2.0. Stable promotion remains gated by deactivation/reactivation smoke plus final consumer visual/staging QA.
+- Final Consumer QA found that forcing GMT in `publishedAt` / `modifiedAt` could move late-night WordPress publications to the next public calendar day. Stable promotion therefore moved to the backward-compatible v0.2.1 News patch candidate instead of promoting v0.2.0 to `main`.
 
 ## [0.1.0] - 2026-09-08
 
