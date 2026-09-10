@@ -61,7 +61,7 @@ namespace HeadlessApiCore\Revalidation {
 		return json_encode( $value, $flags );
 	}
 
-	function wp_remote_post( $url, $args ) {
+	function wp_safe_remote_post( $url, $args ) {
 		$GLOBALS['news_revalidation_requests'][] = array(
 			'url'  => $url,
 			'args' => $args,
