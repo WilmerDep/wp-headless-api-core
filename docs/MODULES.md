@@ -6,7 +6,7 @@ The stable runtime baseline on `main` remains the Core bootstrap and Health REST
 
 ## News — first content pilot
 
-Status: **implemented / v0.2.1 patch candidate under final release validation**.
+Status: **v0.2.1 patch candidate / collection runtime QA passed / final release gate open**.
 
 News wraps the native WordPress `post` type in a provider-owned REST contract. No News CPT is introduced because native posts already model the editorial domain required by the first consumer.
 
@@ -16,13 +16,13 @@ Responsibilities:
 - expose a single published post by slug;
 - exclude unpublished and password-protected content;
 - normalize ID, slug, title, excerpt and rendered content;
-- serialize publication and modification timestamps in the WordPress site timezone as ISO 8601 with offset;
+- preserve publication and modification timestamps using the WordPress site timezone in ISO 8601;
+- expose a minimal public `author.name` from WordPress `display_name` only;
 - normalize featured image metadata and alt text;
 - normalize categories;
-- expose a minimal public author object containing only `display_name` as `author.name`;
 - expose a small provider-owned SEO shape with optional Yoast-backed values and native WordPress fallback;
 - return deterministic 404 errors;
-- keep WordPress/Yoast/user-account implementation details behind the REST contract.
+- keep WordPress/Yoast implementation details behind the REST contract.
 
 ### Internal split
 
@@ -34,20 +34,14 @@ The module is intentionally divided into small responsibilities:
 
 The definitive public schema lives in `docs/REST-API.md`. Runtime validation evidence lives in `docs/VALIDATION.md`.
 
-### v0.2.1 patch boundary
-
-Final HOSGEDOPOL QA identified that v0.2.0 serialized `publishedAt` and `modifiedAt` with GMT forced. v0.2.1 corrects only News and keeps the existing routes and query contract intact.
-
-The patch also adds `author.name` from WordPress `display_name`. It does not expose email, login/username, roles, capabilities, credentials or other account fields.
-
 ### Current validation state
 
-- v0.2.0 Provider runtime checks on the HOSGEDOPOL CMS: passed, including deactivation/reactivation smoke.
-- Yoast-unavailable serializer fallback regression test: passed.
-- Provider → HOSGEDOPOL Next.js technical integration smoke against v0.2.0: passed.
-- v0.2.1 isolated timezone + author regression: required in CI before packaging.
-- v0.2.1 live CMS validation: pending candidate ZIP installation.
-- Consumer visual/staging QA must be repeated against v0.2.1 after the Provider is updated.
+- v0.2.0 original Provider runtime checks: passed, but final Consumer QA found a GMT serialization defect.
+- v0.2.1 timezone + author isolated regression test: passed.
+- v0.2.1 CI/package: passed.
+- v0.2.1 live `/news` collection on HOSGEDOPOL: passed for site-local `publishedAt`, `modifiedAt`, `author.name` privacy boundary and observed chronological ordering.
+- v0.2.1 live Health version, detail and 404 revalidation: pending.
+- Consumer visual/staging QA against v0.2.1: pending in the Consumer project.
 
 ## Later modules
 
