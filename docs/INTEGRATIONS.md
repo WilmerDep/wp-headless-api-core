@@ -42,7 +42,8 @@ This distinction is important so that Provider evolution does not become coupled
 **Current provider contract**
 
 - v0.1.0: Health baseline.
-- v0.2.0: News collection/detail contract merged into `develop`.
+- v0.2.0: initial News collection/detail candidate deployed and technically integrated.
+- v0.2.1: current backward-compatible News patch candidate; preserves WordPress site-timezone timestamps and adds `author.name`.
 
 **News consumer integration status**
 
@@ -73,7 +74,7 @@ No HOSGEDOPOL-specific Consumer logic is added to the plugin runtime because of 
 
 **End-to-end validation checkpoint**
 
-Consumer workflow `Frontend Build #30` (`run 34424685876`) completed successfully and included:
+Consumer workflow `Frontend Build #30` (`run 34424685876`) completed successfully against the original v0.2.0 News candidate and included:
 
 1. live Provider contract smoke test against the deployed WordPress CMS;
 2. Next.js production build;
@@ -89,7 +90,19 @@ WordPress CMS
   -> public News/search routes
 ```
 
-Visual QA and staging approval remain Consumer-side release gates and do not change the Provider contract.
+Final Consumer QA then found a real late-night date discrepancy caused by v0.2.0 forcing GMT serialization. Therefore the Consumer must be revalidated against v0.2.1 before News is considered release-ready.
+
+**v0.2.1 Consumer contract delta**
+
+Existing routes remain unchanged. Consumer-visible changes are:
+
+```text
+publishedAt -> ISO 8601 in WordPress site timezone with offset
+modifiedAt  -> ISO 8601 in WordPress site timezone with offset
+author      -> { name: <WordPress display_name> }
+```
+
+The Consumer should not expect or depend on any additional WordPress user-account fields.
 
 **Temporary local-only News migration**
 
@@ -101,9 +114,9 @@ visita-del-director-al-hospital-general-docente-de-la-policia-nacional
 
 It must be migrated into the WordPress CMS before the Consumer removes its local fallback. The preferred transport under evaluation is Zippy from a WordPress origin; WXR remains an alternative. This migration concern must not become permanent HOSGEDOPOL-specific runtime code in Headless API Core.
 
-**Minimum compatible plugin version**
+**Minimum compatible plugin version for final HOSGEDOPOL News cutover**
 
-- News integration requires the v0.2.0 News contract or later compatible version.
+- `0.2.1` or a later backward-compatible News version.
 
 ## Cross-repository rule
 
