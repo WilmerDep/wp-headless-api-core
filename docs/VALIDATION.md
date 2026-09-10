@@ -63,9 +63,9 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] After reactivation, `GET /wp-json/headless-core/v1/news` returned the live paginated News collection successfully.
 - [x] No REST namespace regression was observed after the activation cycle.
 
-### Approval
+### Approval status
 
-The News v0.2.0 candidate has passed the required runtime checks on the HOSGEDOPOL CMS, the isolated Yoast-unavailable fallback regression test, and the deactivation/reactivation release preflight. The Provider side is ready for final release gating once the Consumer visual/staging QA is confirmed.
+The v0.2.0 Provider passed its original runtime and activation checks, but final HOSGEDOPOL Consumer QA later exposed an editorial timezone defect. v0.2.0 is therefore **not** eligible for promotion to `main`; it is superseded by the v0.2.1 News patch candidate documented below.
 
 ---
 
@@ -115,10 +115,10 @@ Future Consumer-side UI/backend work should remain in its own project unless ano
 
 ### Remaining gates outside the Provider
 
-The following remain Consumer/release concerns rather than failures of the v0.2.0 Provider contract:
+The following remain Consumer/release concerns rather than failures of the original v0.2.0 route availability:
 
-- [ ] visual QA of News surfaces;
-- [ ] staging smoke test at `dev.hosgedopol.gob.do`;
+- [ ] visual QA of News surfaces against the corrected v0.2.1 Provider;
+- [ ] staging smoke test at `dev.hosgedopol.gob.do` against v0.2.1;
 - [ ] migration of the one local-only News article into WordPress before removing Consumer fallbacks;
 - [ ] final Consumer cutover and fallback removal.
 
@@ -129,3 +129,49 @@ visita-del-director-al-hospital-general-docente-de-la-policia-nacional
 ```
 
 Its transport into WordPress is expected to use Zippy or WXR outside the permanent Headless API Core runtime.
+
+---
+
+## HOSGEDOPOL CMS — News v0.2.1 patch candidate
+
+### QA finding that triggered the patch
+
+During final Consumer QA, the real WordPress post **“Prueba de consumo api headless”** was published in WordPress on `09/09/2026` at `23:31` local editorial time, while the Provider/Consumer displayed `10/09/2026`.
+
+Root cause in `modules/News/News_Serializer.php`:
+
+```php
+get_post_time( DATE_ATOM, true, $post )
+get_post_modified_time( DATE_ATOM, true, $post )
+```
+
+The second argument forced GMT/UTC serialization. For a UTC-04:00 WordPress installation, a publication at 23:31 local time becomes 03:31 UTC on the following calendar day.
+
+### v0.2.1 implementation contract
+
+- [x] `publishedAt` now requests WordPress site-local time and preserves the site timezone offset in ISO 8601.
+- [x] `modifiedAt` now uses the same site-timezone semantics.
+- [x] Collection/detail payloads add `author.name` from the post author's WordPress `display_name`.
+- [x] Author serialization intentionally exposes no email, login/username, roles, capabilities, credentials or other user fields.
+- [x] Existing `/news` and `/news/{slug}` routes remain unchanged.
+- [x] Existing pagination and `orderby=date|modified` query behavior remains unchanged.
+- [x] Isolated regression test covers the concrete `2026-09-09T23:31:00-04:00` case plus `modifiedAt` and author privacy boundary.
+- [x] A reusable live smoke test was added for collection/detail timestamps, author, chronological ordering and 404.
+
+### Required live validation after installing v0.2.1
+
+- [ ] `/health` reports plugin version `0.2.1`.
+- [ ] `/news` returns the real collection successfully.
+- [ ] The known late-night test post preserves `2026-09-09` and returns the expected site offset (HOSGEDOPOL currently expects `-04:00`).
+- [ ] `modifiedAt` carries the WordPress site timezone offset.
+- [ ] `author.name` exists in collection and matches the editorial author's `display_name`.
+- [ ] `author.name` exists in detail and no additional author-account fields are exposed.
+- [ ] Collection remains correctly ordered by publication date/time.
+- [ ] `/news/{slug}` detail continues to return content and SEO correctly.
+- [ ] Unknown slug still returns HTTP 404 with `headless_core_news_not_found`.
+- [ ] CI/package for v0.2.1 passes.
+- [ ] HOSGEDOPOL Consumer is revalidated against this corrected contract.
+
+### Candidate status
+
+v0.2.1 is a backward-compatible News patch candidate. Stable promotion remains blocked until the live CMS and HOSGEDOPOL Consumer checks above are completed.
