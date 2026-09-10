@@ -6,34 +6,28 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### News v0.2.1 candidate
+### Changed
 
-#### Added
+- Documentation aligned with the validated v0.2.0 News state on `develop`.
+- HOSGEDOPOL consumer integration boundary and end-to-end validation evidence recorded.
+- News v0.2.1 patch candidate preserves WordPress site-local editorial timestamps in ISO 8601 instead of forcing GMT/UTC.
+- News v0.2.1 adds a minimal public author contract: `author.name` from WordPress `display_name` only.
 
-- Public `author` object on News collection and detail payloads.
-- `author.name` is sourced exclusively from the post author's WordPress `display_name`.
-- Isolated regression coverage for News site-timezone timestamps and the public-author data boundary.
-- Reusable live News smoke test covering health, collection, chronological ordering, detail, public author, timestamp offsets and deterministic 404 behavior.
+### Validated for v0.2.1 candidate
 
-#### Fixed
+- Automated timezone + author regression test passes.
+- CI/package is green and produces `wp-headless-api-core-v0.2.1`.
+- Live `/news` collection on HOSGEDOPOL preserves the 09/09/2026 23:31 publication as `2026-09-09T23:31:20-04:00`.
+- Live `modifiedAt` also carries the site offset.
+- Live collection exposes only `author.name`; observed values include `HOSGEDOPOL` and `Jessica Tejada`.
+- Observed descending collection ordering remains chronological after the timestamp fix.
 
-- `publishedAt` no longer forces GMT/UTC. It now preserves the date/time in the timezone configured for the WordPress site and returns ISO 8601 with the corresponding offset.
-- `modifiedAt` now follows the same WordPress site-timezone semantics.
-- Late-night editorial publications no longer move to the next calendar day merely because the Provider serialized them in UTC.
+### Pending release gate
 
-#### Security / privacy
-
-- News author serialization exposes only `display_name` as `author.name`.
-- Email, login/username, roles, capabilities, credentials and other internal WordPress user fields are not exposed.
-
-#### Validation pending
-
-- Install the v0.2.1 candidate ZIP on the HOSGEDOPOL CMS.
-- Confirm the known `09/09/2026 23:31` editorial case returns `2026-09-09T23:31:00-04:00`.
-- Confirm `modifiedAt` carries the configured WordPress site offset.
-- Confirm `author.name` matches the editorial author in collection and detail.
-- Revalidate collection chronological ordering, detail and 404 on the live CMS.
-- Re-run HOSGEDOPOL Consumer QA against the corrected Provider before stable promotion.
+- Confirm `/health` reports `0.2.1`.
+- Revalidate News detail and 404 against the live v0.2.1 plugin.
+- Revalidate the HOSGEDOPOL Consumer visual/staging flow against v0.2.1.
+- Promote the corrected News milestone only after the release gate passes.
 
 ## [0.2.0] - 2026-09-09
 
@@ -67,11 +61,10 @@ The project follows Semantic Versioning.
 - Yoast-unavailable fallback regression test passed in CI.
 - News feature merged into `develop`.
 - Technical Provider → Consumer integration passed through the HOSGEDOPOL Next.js CI smoke path.
-- Plugin deactivation/reactivation preflight passed with `/health` and `/news` remaining available after reactivation.
 
-### Superseded before stable promotion
+### Not promoted
 
-- Final Consumer QA found that forcing GMT in `publishedAt` / `modifiedAt` could move late-night WordPress publications to the next public calendar day. Stable promotion therefore moved to the backward-compatible v0.2.1 News patch candidate instead of promoting v0.2.0 to `main`.
+- v0.2.0 was not promoted to `main` because final Consumer QA detected a UTC/GMT serialization defect for late-night editorial timestamps. The corrected candidate is v0.2.1.
 
 ## [0.1.0] - 2026-09-08
 
