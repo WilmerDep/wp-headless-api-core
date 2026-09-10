@@ -157,6 +157,8 @@ The second argument forced GMT/UTC serialization. For a UTC-04:00 WordPress inst
 - [x] Existing pagination and `orderby=date|modified` query behavior remains unchanged.
 - [x] Isolated regression test covers the concrete `2026-09-09T23:31:00-04:00` case plus `modifiedAt` and author privacy boundary.
 - [x] A reusable live smoke test was added for collection/detail timestamps, author, chronological ordering and 404.
+- [x] CI/package passed on branch run `34434441626` and PR run `34434523736`.
+- [x] PR run generated artifact `wp-headless-api-core-v0.2.1`, SHA-256 `6a32bf6ab29e00778f0f8e554a5128aa5b5c230159a033feb2c4c5287717c338`.
 
 ### Required live validation after installing v0.2.1
 
@@ -169,9 +171,9 @@ The second argument forced GMT/UTC serialization. For a UTC-04:00 WordPress inst
 - [ ] Collection remains correctly ordered by publication date/time.
 - [ ] `/news/{slug}` detail continues to return content and SEO correctly.
 - [ ] Unknown slug still returns HTTP 404 with `headless_core_news_not_found`.
-- [ ] CI/package for v0.2.1 passes.
+- [x] CI/package for v0.2.1 passes.
 - [ ] HOSGEDOPOL Consumer is revalidated against this corrected contract.
 
 ### Candidate status
 
-v0.2.1 is a backward-compatible News patch candidate. Stable promotion remains blocked until the live CMS and HOSGEDOPOL Consumer checks above are completed.
+v0.2.1 is a backward-compatible News patch candidate. Automated CI/package validation is green. Stable promotion remains blocked until the live CMS and HOSGEDOPOL Consumer checks above are completed.
