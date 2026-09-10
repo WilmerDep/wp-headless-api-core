@@ -28,7 +28,7 @@ No authentication is required for Health. The route still declares an explicit p
 
 ---
 
-## News — v0.2.1 contract candidate
+## News — v0.2.1
 
 News wraps the native WordPress `post` type. The provider exposes published, non-password-protected posts only.
 
@@ -179,9 +179,60 @@ Unknown, unpublished or password-protected slugs return HTTP `404` with WordPres
 
 `headless_core_news_not_found`
 
+---
+
+## Hero — v0.3.0 contract candidate
+
+Hero is the next structured content module. It exposes an ordered public collection of image-based hero slides while leaving carousel presentation behavior to each Consumer.
+
+### `GET /wp-json/headless-core/v1/hero`
+
+Public, read-only collection endpoint.
+
+Candidate response:
+
+```json
+{
+  "items": [
+    {
+      "id": 123,
+      "image": {
+        "url": "https://cms.example.org/wp-content/uploads/hero-desktop.jpg",
+        "alt": "Accessible slide description",
+        "width": 1920,
+        "height": 760
+      },
+      "mobileImage": {
+        "url": "https://cms.example.org/wp-content/uploads/hero-mobile.jpg",
+        "alt": "Accessible slide description",
+        "width": 760,
+        "height": 960
+      },
+      "href": "/servicios",
+      "order": 1,
+      "objectPosition": "center center"
+    }
+  ]
+}
+```
+
+Contract rules:
+
+- only `publish` Hero items are exposed;
+- primary image is required for a public item;
+- `mobileImage` is `null` when no dedicated mobile attachment exists;
+- `href` is `null` when the slide is not clickable;
+- `objectPosition` is `null` when the Consumer should use its default positioning;
+- items are ordered by `menu_order ASC` with deterministic secondary ordering;
+- image objects expose provider-normalized URL, alt, width and height;
+- the endpoint does not expose drafts, pending, private, trash or password-protected items.
+
+Carousel behavior such as autoplay duration, transitions, arrows, dots, swipe thresholds, pause logic and CSS remains Consumer-owned in v0.3.0.
+
+The detailed design and validation gate are documented in `docs/HERO-CONTRACT.md`.
+
 ## Planned, not implemented
 
-- `GET /headless-core/v1/hero`
 - `GET /headless-core/v1/services`
 - `GET /headless-core/v1/directory`
 - `GET /headless-core/v1/galleries`
