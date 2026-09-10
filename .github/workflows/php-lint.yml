@@ -36,6 +36,15 @@ jobs:
       - name: Run News timezone and author regression test
         run: php tests/news-datetime-timezone.php
 
+      - name: Run News public visibility regression test
+        run: php tests/news-public-visibility.php
+
+      - name: Run News revalidation HMAC signature test
+        run: php tests/news-revalidation-signature.php
+
+      - name: Run News editorial lifecycle revalidation test
+        run: php tests/news-revalidation-lifecycle.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
