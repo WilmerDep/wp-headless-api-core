@@ -125,6 +125,7 @@ namespace HeadlessApiCore\Modules\News {
 		if ( ! ( $result instanceof \WP_Error ) || 'headless_core_news_not_found' !== $result->code || 404 !== ( $result->data['status'] ?? null ) ) {
 			fwrite( STDERR, 'News detail exposed non-public status: ' . $status . "\n" );
 			exit( 1 );
+		}
 	}
 
 	$protected                = new \WP_Post();
