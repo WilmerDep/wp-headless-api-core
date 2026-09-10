@@ -6,28 +6,53 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### Changed
+### News v0.2.2 candidate
+
+#### Added
+
+- Generic outbound revalidation client with configurable Consumer URL and shared secret.
+- HMAC SHA-256 signing using `X-Headless-Timestamp` and `X-Headless-Signature`.
+- News editorial lifecycle observer covering public status transitions, published edits, slug changes, category changes, featured-image changes, Yoast SEO meta changes and permanent deletion.
+- Request-local event aggregation so overlapping WordPress hooks normally produce one revalidation delivery per post/save.
+- Isolated regression coverage for HMAC signing, public-only visibility and News lifecycle event semantics.
+- Reusable live smoke options for asserting that a known slug is public or absent after editorial transitions.
+
+#### Changed
+
+- Plugin candidate version bumped to `0.2.2`.
+- Revalidation configuration is now documented through `HEADLESS_REVALIDATION_URL`, `HEADLESS_REVALIDATION_SECRET` and optional `HEADLESS_REVALIDATION_TIMEOUT`.
+- News public GET contracts remain backward-compatible with v0.2.1; v0.2.2 adds an outbound lifecycle channel rather than changing `/news` response shapes.
+- Hero and later modules remain paused until this News release gate closes.
+
+#### Security
+
+- Revalidation target requires HTTPS by default.
+- Shared secret must contain at least 32 characters.
+- The secret is never included in the payload, REST output or diagnostic logs.
+- Consumer verification contract requires HMAC validation against the raw request body and a recommended 300-second timestamp window.
+- Webhook failures are converted to safe delivery failures and must never roll back or prevent WordPress saves/publications.
+
+#### Pending validation
+
+- CI/package for the complete v0.2.2 candidate.
+- Real CMS lifecycle transitions: draft/publish/private/trash/future/edit/slug/delete.
+- Real signed delivery against the HOSGEDOPOL Consumer endpoint.
+- Failure-path test with Consumer endpoint unavailable/invalid.
+- Final HOSGEDOPOL staging lifecycle QA before News promotion to `main`.
+
+### News v0.2.1 validation history
 
 - Documentation aligned with the validated v0.2.0 News state on `develop`.
 - HOSGEDOPOL consumer integration boundary and end-to-end validation evidence recorded.
-- News v0.2.1 patch candidate preserves WordPress site-local editorial timestamps in ISO 8601 instead of forcing GMT/UTC.
+- News v0.2.1 preserves WordPress site-local editorial timestamps in ISO 8601 instead of forcing GMT/UTC.
 - News v0.2.1 adds a minimal public author contract: `author.name` from WordPress `display_name` only.
-
-### Validated for v0.2.1 candidate
-
-- Automated timezone + author regression test passes.
-- CI/package is green and produces `wp-headless-api-core-v0.2.1`.
-- Live `/news` collection on HOSGEDOPOL preserves the 09/09/2026 23:31 publication as `2026-09-09T23:31:20-04:00`.
-- Live `modifiedAt` also carries the site offset.
-- Live collection exposes only `author.name`; observed values include `HOSGEDOPOL` and `Jessica Tejada`.
-- Observed descending collection ordering remains chronological after the timestamp fix.
-
-### Pending release gate
-
-- Confirm `/health` reports `0.2.1`.
-- Revalidate News detail and 404 against the live v0.2.1 plugin.
-- Revalidate the HOSGEDOPOL Consumer visual/staging flow against v0.2.1.
-- Promote the corrected News milestone only after the release gate passes.
+- Automated timezone + author regression test passed.
+- CI/package passed and produced `wp-headless-api-core-v0.2.1`.
+- Live `/news` collection on HOSGEDOPOL preserved the 09/09/2026 23:31 publication as `2026-09-09T23:31:20-04:00`.
+- Live `modifiedAt` also carried the site offset.
+- Live collection exposed only `author.name`; observed values included `HOSGEDOPOL` and `Jessica Tejada`.
+- Observed descending collection ordering remained chronological after the timestamp fix.
+- Health/detail/404 and real Consumer rendering were subsequently validated before the lifecycle cache finding opened v0.2.2.
 
 ## [0.2.0] - 2026-09-09
 
@@ -64,7 +89,7 @@ The project follows Semantic Versioning.
 
 ### Not promoted
 
-- v0.2.0 was not promoted to `main` because final Consumer QA detected a UTC/GMT serialization defect for late-night editorial timestamps. The corrected candidate is v0.2.1.
+- v0.2.0 was not promoted to `main` because final Consumer QA detected a UTC/GMT serialization defect for late-night editorial timestamps. The corrected line continued through v0.2.1 and then v0.2.2 lifecycle work.
 
 ## [0.1.0] - 2026-09-08
 
