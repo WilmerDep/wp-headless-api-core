@@ -63,9 +63,9 @@ Target CMS: `https://cms.hosgedopol.gob.do`
 - [x] After reactivation, `GET /wp-json/headless-core/v1/news` returned the live paginated News collection successfully.
 - [x] No REST namespace regression was observed after the activation cycle.
 
-### Approval
+### Approval status
 
-The News v0.2.0 candidate has passed the required runtime checks on the HOSGEDOPOL CMS, the isolated Yoast-unavailable fallback regression test, and the deactivation/reactivation release preflight. The Provider side is ready for final release gating once the Consumer visual/staging QA is confirmed.
+The v0.2.0 Provider passed its original runtime and activation checks, but final HOSGEDOPOL Consumer QA later exposed an editorial timezone defect. v0.2.0 is therefore **not** eligible for promotion to `main`; it is superseded by the v0.2.1 News patch candidate documented below.
 
 ---
 
@@ -77,9 +77,9 @@ Consumer branch: `feature/news-headless-consumer`
 
 Consumer PR: `#2 — feat: connect public News to Headless API Core`
 
-Provider baseline: News v0.2.0 contract from `wp-headless-api-core/develop`.
+Provider baseline: News v0.2.0 contract from `wp-headless-api-core/develop`, followed by v0.2.1 patch validation.
 
-### 2026-09-09
+### 2026-09-09 — original v0.2.0 technical integration
 
 The Provider was exercised by a real Consumer integration without adding Consumer-specific runtime behavior to this plugin.
 
@@ -107,6 +107,17 @@ WordPress CMS
   -> public News/search routes
 ```
 
+### 2026-09-10 — v0.2.1 Consumer detail checkpoint
+
+After installing the corrected Provider candidate, the public Consumer detail for `prueba-de-consumo-api-headless` was visually exercised and showed:
+
+- [x] publication date `9 de septiembre de 2026`;
+- [x] publication time `11:31 P. M.`;
+- [x] public author `HOSGEDOPOL`;
+- [x] Provider-backed title, featured image, article content and inline/gallery media rendered successfully.
+
+This confirms the corrected timestamp and author data are reaching the real Consumer detail surface. It is a focused end-to-end checkpoint, **not** a substitute for the remaining full Consumer staging QA across Home, catalog, search, autocomplete, navigation, related content, fallback and responsive behavior.
+
 ### Scope boundary
 
 This cross-repository wiring is recorded here because it validates the plugin contract end-to-end. The Consumer application has its own development workstream and is not owned by this plugin repository.
@@ -115,10 +126,8 @@ Future Consumer-side UI/backend work should remain in its own project unless ano
 
 ### Remaining gates outside the Provider
 
-The following remain Consumer/release concerns rather than failures of the v0.2.0 Provider contract:
-
-- [ ] visual QA of News surfaces;
-- [ ] staging smoke test at `dev.hosgedopol.gob.do`;
+- [ ] full visual QA of News surfaces against the corrected v0.2.1 Provider;
+- [ ] full staging smoke test at `dev.hosgedopol.gob.do` against v0.2.1;
 - [ ] migration of the one local-only News article into WordPress before removing Consumer fallbacks;
 - [ ] final Consumer cutover and fallback removal.
 
@@ -129,3 +138,54 @@ visita-del-director-al-hospital-general-docente-de-la-policia-nacional
 ```
 
 Its transport into WordPress is expected to use Zippy or WXR outside the permanent Headless API Core runtime.
+
+---
+
+## HOSGEDOPOL CMS — News v0.2.1 patch candidate
+
+### QA finding that triggered the patch
+
+During final Consumer QA, the real WordPress post **“Prueba de consumo api headless”** was published in WordPress on `09/09/2026` at `23:31` local editorial time, while the Provider/Consumer displayed `10/09/2026`.
+
+Root cause in `modules/News/News_Serializer.php`:
+
+```php
+get_post_time( DATE_ATOM, true, $post )
+get_post_modified_time( DATE_ATOM, true, $post )
+```
+
+The second argument forced GMT/UTC serialization. For a UTC-04:00 WordPress installation, a publication at 23:31 local time becomes 03:31 UTC on the following calendar day.
+
+### v0.2.1 implementation contract
+
+- [x] `publishedAt` now requests WordPress site-local time and preserves the site timezone offset in ISO 8601.
+- [x] `modifiedAt` now uses the same site-timezone semantics.
+- [x] Collection/detail payloads add `author.name` from the post author's WordPress `display_name`.
+- [x] Author serialization intentionally exposes no email, login/username, roles, capabilities, credentials or other user fields.
+- [x] Existing `/news` and `/news/{slug}` routes remain unchanged.
+- [x] Existing pagination and `orderby=date|modified` query behavior remains unchanged.
+- [x] Isolated regression test covers the concrete `2026-09-09T23:31:00-04:00` case plus `modifiedAt` and author privacy boundary.
+- [x] A reusable live smoke test was added for collection/detail timestamps, author, chronological ordering and 404.
+- [x] CI/package validation is green on the patch branch/PR.
+
+### 2026-09-10 — live release-gate validation
+
+- [x] Candidate v0.2.1 installed on the HOSGEDOPOL CMS.
+- [x] `/wp-json/headless-core/v1/health` returned `ok=true`, `service="Headless API Core"`, `version="0.2.1"`.
+- [x] `/news` returned the live collection successfully.
+- [x] Test post `prueba-de-consumo-api-headless` returned `publishedAt="2026-09-09T23:31:20-04:00"`, preserving the editorial calendar day and site offset.
+- [x] The same post returned `modifiedAt="2026-09-09T23:34:04-04:00"`.
+- [x] Collection payload exposed `author.name` only; the test post returned `HOSGEDOPOL` and other visible posts returned editorial display names such as `Jessica Tejada`.
+- [x] No email, login/username, roles, capabilities or other author-account fields were visible in the public author object.
+- [x] Visible collection order remained descending by publication date/time: the 2026-09-09 test post preceded 2026-08-03 and 2026-07-31 items.
+- [x] The real Consumer detail route rendered the corrected date, time and author plus article content/media, confirming the Provider detail path remains functionally consumable after the patch.
+- [x] Unknown slug `somos%20pepa` returned HTTP 404 with `code="headless_core_news_not_found"`, `message="News item not found."`, `data.status=404`.
+- [x] Latest PR-head CI `Validate and Build` #58 passed on commit `4ef8848c66dfa5468dc749768e07473f63b8f095`.
+
+### Release-gate status
+
+Provider-side v0.2.1 validation is **PASS** for Health, collection timestamps, modification timestamp, author privacy boundary, observed chronological ordering, functional Consumer detail path and deterministic 404 behavior.
+
+The existing detail serializer continues to inherit the same summary fields (`publishedAt`, `modifiedAt`, `author`) before appending `content` and `seo`; the focused Consumer detail checkpoint confirms those values are reaching the rendered article. A direct raw-detail JSON re-inspection of the SEO object was not captured in this checkpoint, but the SEO implementation itself was unchanged by v0.2.1 and remains covered by the previously validated News detail contract and SEO fallback regression.
+
+Stable promotion to `main` remains blocked only by the **full HOSGEDOPOL Consumer staging QA/cutover gate** and the planned local-only article migration/fallback retirement. No later content module should begin before that release gate is formally closed.

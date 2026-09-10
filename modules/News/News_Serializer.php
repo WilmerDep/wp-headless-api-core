@@ -24,10 +24,11 @@ final class News_Serializer {
 			'slug'          => (string) $post->post_name,
 			'title'         => $this->normalize_text( get_the_title( $post ) ),
 			'excerpt'       => $this->get_excerpt( $post ),
-			'publishedAt'   => get_post_time( DATE_ATOM, true, $post ),
-			'modifiedAt'    => get_post_modified_time( DATE_ATOM, true, $post ),
+			'publishedAt'   => get_post_time( DATE_ATOM, false, $post ),
+			'modifiedAt'    => get_post_modified_time( DATE_ATOM, false, $post ),
 			'featuredImage' => $this->get_featured_image( $post ),
 			'categories'    => $this->get_categories( $post ),
+			'author'        => $this->get_author( $post ),
 		);
 	}
 
@@ -108,7 +109,7 @@ final class News_Serializer {
 			if ( 1 === preg_match( $native_with_suffix, $title ) ) {
 				return $fallback_title;
 			}
-	}
+		}
 
 		if ( '' !== $site_name ) {
 			$pattern = '/\s*(?:[-–—|·:»]+)\s*' . preg_quote( $site_name, '/' ) . '\s*$/iu';
@@ -175,6 +176,24 @@ final class News_Serializer {
 		}
 
 		return $categories;
+	}
+
+	/**
+	 * Return the public author representation.
+	 *
+	 * The public News contract intentionally exposes only the WordPress
+	 * `display_name`. Login, username, email and other user-account fields remain
+	 * private implementation details and are never included in this payload.
+	 *
+	 * @param WP_Post $post WordPress post.
+	 * @return array{name:string}
+	 */
+	private function get_author( WP_Post $post ) {
+		return array(
+			'name' => $this->normalize_text(
+				get_the_author_meta( 'display_name', (int) $post->post_author )
+			),
+		);
 	}
 
 	/**

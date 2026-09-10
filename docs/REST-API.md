@@ -24,17 +24,15 @@ Response contract:
 }
 ```
 
-The `version` field reports the active plugin version. It was `0.1.0` for the validated Health baseline and is `0.2.0` on the current News candidate line.
-
 No authentication is required for Health. The route still declares an explicit permission callback.
 
 ---
 
-## News — v0.2.0 candidate contract
+## News — v0.2.1 contract candidate
 
 News wraps the native WordPress `post` type. The provider exposes published, non-password-protected posts only.
 
-The contract below is implemented on the News feature line and is not considered frozen until runtime validation on the target CMS is completed.
+v0.2.1 keeps the same endpoint URLs introduced in v0.2.0 while correcting editorial timestamp semantics and adding a minimal public author representation.
 
 ### `GET /wp-json/headless-core/v1/news`
 
@@ -49,7 +47,7 @@ Supported query parameters:
 | `order` | `desc` | `asc` or `desc` |
 | `orderby` | `date` | `date` or `modified` |
 
-`orderby=title` is intentionally not part of the v0.2.0 contract. Legacy WordPress titles can contain source entities, punctuation or decorative Unicode that sort according to the database source value rather than the normalized public title returned by this provider. News consumers currently require stable chronological ordering, so v0.2.0 limits ordering to publication and modification dates.
+`orderby=title` is intentionally not part of the contract. Legacy WordPress titles can contain source entities, punctuation or decorative Unicode that sort according to the database source value rather than the normalized public title returned by this provider. News consumers require stable chronological ordering, so ordering is limited to publication and modification dates.
 
 Collection response:
 
@@ -61,8 +59,8 @@ Collection response:
       "slug": "noticia-ejemplo",
       "title": "Noticia ejemplo",
       "excerpt": "Resumen público de la noticia.",
-      "publishedAt": "2026-09-08T18:30:00+00:00",
-      "modifiedAt": "2026-09-08T19:10:00+00:00",
+      "publishedAt": "2026-09-09T23:31:20-04:00",
+      "modifiedAt": "2026-09-09T23:34:04-04:00",
       "featuredImage": {
         "url": "https://cms.example.org/wp-content/uploads/example.jpg",
         "alt": "Texto alternativo",
@@ -75,7 +73,10 @@ Collection response:
           "slug": "noticias",
           "name": "Noticias"
         }
-      ]
+      ],
+      "author": {
+        "name": "Display Name"
+      }
     }
   ],
   "pagination": {
@@ -89,6 +90,36 @@ Collection response:
 
 `featuredImage` is `null` when no featured image exists. `categories` is always an array.
 
+### Editorial date/time boundary
+
+`publishedAt` and `modifiedAt` are serialized as ISO 8601 using the timezone configured for the WordPress site. The provider preserves the editorial wall-clock date/time and includes the site offset.
+
+For example, a post entered in a UTC-04:00 WordPress site as `09/09/2026 23:31` is exposed as:
+
+```text
+2026-09-09T23:31:00-04:00
+```
+
+The provider must not force that value to UTC for this contract because doing so can move a late-night editorial publication to the next calendar day when a consumer formats it naively.
+
+WordPress query ordering remains source-of-truth ordering by the native `post_date` / `post_modified` semantics selected through `orderby=date|modified`; the timezone fix changes only the serialized public representation, not the query sort field.
+
+### Public author boundary
+
+News exposes only:
+
+```json
+{
+  "author": {
+    "name": "Display Name"
+  }
+}
+```
+
+`author.name` comes from the WordPress author's `display_name`.
+
+The contract intentionally does **not** expose email, login, username, roles, capabilities, credentials or additional user-account metadata.
+
 Full article HTML is intentionally omitted from the collection response to avoid over-fetching.
 
 ### Source slug boundary
@@ -101,7 +132,7 @@ If legacy content contains percent-encoded or otherwise undesirable slugs, corre
 
 Public, read-only detail endpoint.
 
-A successful response contains the collection fields plus `content` and `seo`:
+A successful response contains the same summary fields, including site-local timestamps and `author.name`, plus `content` and `seo`:
 
 ```json
 {
@@ -110,10 +141,13 @@ A successful response contains the collection fields plus `content` and `seo`:
   "title": "Noticia ejemplo",
   "excerpt": "Resumen público de la noticia.",
   "content": "<p>Contenido HTML renderizado por WordPress.</p>",
-  "publishedAt": "2026-09-08T18:30:00+00:00",
-  "modifiedAt": "2026-09-08T19:10:00+00:00",
+  "publishedAt": "2026-09-09T23:31:20-04:00",
+  "modifiedAt": "2026-09-09T23:34:04-04:00",
   "featuredImage": null,
   "categories": [],
+  "author": {
+    "name": "Display Name"
+  },
   "seo": {
     "source": "wordpress",
     "title": "Noticia ejemplo",
@@ -135,17 +169,17 @@ When Yoast SEO is available, Headless API Core may use its supported Surfaces AP
 
 Yoast-generated title values may append the WordPress CMS site name. The provider removes that trailing CMS site-name composition before returning `seo.title` and `seo.openGraph.title`; the public frontend owns final site-name composition.
 
-The provider intentionally does **not** forward CMS canonical URLs, robots directives, or Schema data in this first News contract. Those values may contain CMS-domain assumptions and require the future configurable public-frontend URL strategy before they can be safely exposed.
+The provider intentionally does **not** forward CMS canonical URLs, robots directives or Schema data in this first News contract. Those values may contain CMS-domain assumptions and require the future configurable public-frontend URL strategy before they can be safely exposed.
 
 Consumers must not call Yoast APIs directly as a contractual dependency of Headless API Core.
 
 ### 404 behavior
 
-Unknown, unpublished, or password-protected slugs return HTTP `404` with WordPress REST error code:
+Unknown, unpublished or password-protected slugs return HTTP `404` with WordPress REST error code:
 
 `headless_core_news_not_found`
 
-## Planned, not implemented in the current stable version
+## Planned, not implemented
 
 - `GET /headless-core/v1/hero`
 - `GET /headless-core/v1/services`

@@ -2,7 +2,7 @@
 
 Reusable, modular WordPress plugin for exposing a stable, documented REST contract to decoupled frontends such as Next.js and React.
 
-> Status: v0.2.0 News is merged into `develop`, runtime-validated on the first real CMS and technically validated end-to-end from WordPress through the HOSGEDOPOL Next.js consumer. `main` remains the stable release line and has not yet been promoted to v0.2.0.
+> Status: News v0.2.1 is the current patch candidate on `fix/news-site-timezone`. Automated CI/package validation is green and live collection QA on HOSGEDOPOL has confirmed site-local timestamps, public author output and chronological ordering. `main` remains the stable release line until final detail/404 and Consumer QA complete.
 
 ## Goals
 
@@ -26,33 +26,38 @@ Runtime-validated on the HOSGEDOPOL CMS.
 
 ### v0.2.0 — News pilot
 
-Implemented and merged into `develop`.
+Implemented and merged into `develop`, but not promoted to `main` because final Consumer QA found a UTC/GMT serialization defect for late-night editorial timestamps.
 
-- `GET /wp-json/headless-core/v1/news`
-- `GET /wp-json/headless-core/v1/news/{slug}`
+### v0.2.1 — News patch candidate
+
+Current candidate before stable promotion.
+
+- Same `GET /wp-json/headless-core/v1/news` route.
+- Same `GET /wp-json/headless-core/v1/news/{slug}` route.
 - Native WordPress `post` source.
 - Published, non-password-protected content only.
 - Pagination and deterministic date/modified ordering.
+- `publishedAt` / `modifiedAt` preserve the WordPress site timezone in ISO 8601.
+- Public author shape limited to `author.name` from WordPress `display_name`.
 - Featured image and category normalization.
 - Detail HTML content.
 - Provider-owned SEO shape with optional Yoast-backed values and native WordPress fallback.
 - Deterministic 404 contract.
-- Runtime validation on the HOSGEDOPOL CMS.
-- Technical Provider → Consumer validation against the HOSGEDOPOL Next.js integration.
+- Runtime collection validation on the HOSGEDOPOL CMS confirmed the late-night timezone fix, modified timestamp offset, public author privacy boundary and descending chronological ordering.
 
 The public schema is documented in `docs/REST-API.md`. Runtime evidence lives in `docs/VALIDATION.md` and consumer relationship details in `docs/INTEGRATIONS.md`.
 
-### Next release gate
+### Current release gate
 
-Before promoting v0.2.0 from `develop` to `main`:
+Before promoting News to `main`:
 
-- complete the pending plugin deactivation/reactivation smoke test;
-- complete consumer visual/staging QA for News;
-- verify documentation and changelog are current;
-- verify CI/package artifact one final time;
-- promote the validated milestone to `main`.
+- confirm `/health` reports v0.2.1;
+- revalidate live News detail and unknown-slug 404 on v0.2.1;
+- complete Consumer visual/staging QA against the corrected contract;
+- verify final CI/package artifact;
+- merge the patch into `develop` and then promote the validated milestone to `main`.
 
-Hero, Services, Directory, Galleries and Settings remain deferred until the News pipeline is fully closed.
+Hero, Services, Directory, Galleries and Settings remain deferred until News is fully closed.
 
 ## Architecture principles
 
@@ -73,7 +78,7 @@ Cross-repository validation is allowed when needed to prove a provider contract 
 
 - `main`: stable milestones/releases.
 - `develop`: integration/development branch.
-- `feature/*`: isolated feature work.
+- `feature/*` / `fix/*`: isolated feature and patch work.
 
 GitHub Actions validates PHP syntax, regression tests and produces a version-aware installable WordPress ZIP.
 

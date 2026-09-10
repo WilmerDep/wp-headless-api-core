@@ -33,6 +33,9 @@ jobs:
       - name: Run isolated News SEO fallback test
         run: php tests/news-seo-fallback.php
 
+      - name: Run News timezone and author regression test
+        run: php tests/news-datetime-timezone.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
