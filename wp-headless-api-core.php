@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Headless API Core
  * Description: Modular REST API core for using WordPress as a headless CMS.
- * Version: 0.3.2
+ * Version: 0.3.3
  * Author: WilmerDep
  * Text Domain: wp-headless-api-core
  * Domain Path: /languages
@@ -10,7 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'HEADLESS_API_CORE_VERSION', '0.3.2' );
+define( 'HEADLESS_API_CORE_VERSION', '0.3.3' );
 define( 'HEADLESS_API_CORE_FILE', __FILE__ );
 define( 'HEADLESS_API_CORE_PATH', plugin_dir_path( __FILE__ ) );
 
