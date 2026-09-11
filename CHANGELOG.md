@@ -6,7 +6,7 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### Hero v0.3.0 candidate
+### Hero v0.3.2 candidate
 
 #### Added
 
@@ -22,10 +22,14 @@ The project follows Semantic Versioning.
 
 #### Changed
 
-- Plugin candidate version bumped to `0.3.0`.
-- Core bootstrap now loads the Hero module after News.
+- Plugin candidate version bumped to `0.3.2`.
+- Core bootstrap loads the Hero module after News.
 - Hero ordering is deterministic: `menu_order ASC`, then `ID ASC`.
 - Hero queries bypass persistent query-result caching and the REST endpoint emits explicit no-store/no-cache headers.
+- Hero editor uses a guided, card-based UI for images, link behavior, image focus, order and accessibility.
+- Desktop layout places **Comportamiento** and **Accesibilidad** side by side while preserving **Imágenes** at full width.
+- The editor automatically collapses to a single column on narrower admin widths.
+- Behavior fields keep a vertical flow inside their card so controls remain readable at half-width.
 
 #### Deliberately excluded
 
@@ -34,7 +38,7 @@ The project follows Semantic Versioning.
 
 #### Pending validation
 
-- Install v0.3.0 candidate ZIP on the WordPress QA target.
+- Install latest Hero candidate ZIP on the WordPress QA target.
 - Create multiple Hero items and validate editorial visibility.
 - Validate required primary image and optional mobile image.
 - Validate href, alt, object-position and deterministic ordering.
