@@ -2,7 +2,7 @@
 
 Reusable, modular WordPress plugin for exposing a stable, documented REST contract to decoupled frontends such as Next.js and React.
 
-> Status: News v0.2.2 is the current lifecycle/revalidation patch candidate on `fix/news-revalidation-lifecycle`. The public News GET contract remains backward-compatible with v0.2.1 while v0.2.2 adds Provider freshness hardening plus signed editorial revalidation delivery. `main` remains the stable release line until CMS + Consumer lifecycle QA passes.
+> Status: News v0.2.2 is merged into `develop` and its Provider-side lifecycle/freshness gate is closed. Hero v0.3.0 is the active candidate on `feature/hero-v0.3.0`, with automated tests and package CI green. Runtime CMS + Consumer QA remains before Hero promotion.
 
 ## Goals
 
@@ -21,65 +21,64 @@ Runtime-validated on the HOSGEDOPOL CMS.
 
 - `GET /wp-json/headless-core/v1/health`
 
-### v0.2.0 — News pilot
+### v0.2.x — News
 
-Implemented and merged into `develop`, but not promoted to `main` because final Consumer QA found a UTC/GMT serialization defect for late-night editorial timestamps.
+News wraps native WordPress posts and exposes:
 
-### v0.2.1 — News timezone + author patch
+- `GET /wp-json/headless-core/v1/news`
+- `GET /wp-json/headless-core/v1/news/{slug}`
+- published/non-password-protected content only;
+- site-local ISO 8601 publication/modification timestamps;
+- minimal public `author.name`;
+- normalized featured images/categories;
+- detail HTML and provider-owned SEO;
+- deterministic 404s;
+- fresh Provider queries and explicit REST `no-store` semantics;
+- signed HMAC editorial revalidation events for decoupled Consumers.
 
-Validated on the HOSGEDOPOL CMS and merged into `develop`.
+News v0.2.2 is merged into `develop`. Remaining skeleton/on-focus behavior belongs to the Consumer and does not block Provider development.
 
-- Same `GET /wp-json/headless-core/v1/news` route.
-- Same `GET /wp-json/headless-core/v1/news/{slug}` route.
-- Site-local ISO 8601 editorial timestamps.
-- Minimal public `author.name` contract.
-- Pagination and stable `date|modified` ordering.
-- Featured image metadata and categories.
-- Detail HTML content.
-- Provider-owned SEO shape with optional Yoast-backed values and native WordPress fallback.
-- Deterministic 404 contract.
+### v0.3.0 — Hero candidate
 
-### v0.2.2 — News editorial lifecycle + signed revalidation
+Current active candidate.
 
-Current candidate before stable News promotion.
+- Editorial-only CPT `headless_hero`.
+- Featured image = required primary/desktop image.
+- Optional mobile image from WordPress Media Library.
+- Optional safe target URL.
+- Optional accessible alt override.
+- Optional sanitized object position.
+- `menu_order` controls public order with deterministic ID tie-breaker.
+- Public endpoint: `GET /wp-json/headless-core/v1/hero`.
+- Only published, non-password-protected items with a valid primary image are returned.
+- Provider query cache bypass + explicit `no-store` response policy.
+- Raw CPT is not exposed through native WP REST.
+- Consumer owns autoplay, arrows, dots, swipe, transitions, skeletons and layout.
 
-- Keeps the v0.2.1 public GET response shapes unchanged.
-- Makes the Provider authoritative/fresh by bypassing persistent News query-result caching and emitting explicit REST `no-store` headers.
-- Emits generic News lifecycle events after WordPress editorial changes.
-- Signs outbound JSON with HMAC SHA-256.
-- Uses configurable Consumer target URL and shared secret outside Git.
-- Covers `draft/future/publish/private/trash`, published edits, slug changes and permanent deletion.
-- Aggregates overlapping WordPress hooks into one event per post/request.
-- Does not block or roll back WordPress saves when webhook delivery fails.
-- Keeps `/news` and `/news/{slug}` public-only regardless of webhook state.
-- Supports a short Consumer TTL (about 60 seconds) as failure fallback.
+The Hero contract lives in `docs/HERO-CONTRACT.md`.
 
-The public schema is documented in `docs/REST-API.md`. Revalidation signing/lifecycle details live in `docs/REVALIDATION.md`. Runtime evidence lives in `docs/VALIDATION.md` and consumer relationship details in `docs/INTEGRATIONS.md`.
+### Current Hero release gate
 
-### Current release gate
+Before merging/promoting v0.3.0:
 
-Before promoting News to `main`:
+- install the v0.3.0 candidate ZIP on the WordPress QA target;
+- create at least two Hero items;
+- verify public-only visibility and required primary image behavior;
+- verify optional mobile image, href, alt and object-position fields;
+- verify deterministic order and Provider freshness;
+- validate the first Consumer end-to-end without introducing Consumer-specific runtime code into the plugin.
 
-- validate all v0.2.2 regression tests and package CI;
-- install the refreshed candidate ZIP on the HOSGEDOPOL CMS;
-- verify Provider `/news` and `/news/{slug}` reflect editorial state on the first normal refresh;
-- configure the signed Consumer revalidation endpoint and shared secret;
-- validate publish/unpublish/private/trash/future/edit/slug/delete lifecycle behavior end-to-end;
-- confirm webhook failure does not block WordPress editing;
-- confirm the Provider continues exposing only public News;
-- complete final Consumer staging QA.
-
-Hero, Services, Directory, Galleries and Settings remain paused until this News lifecycle gate is fully closed.
+Services, Directory, Galleries and Settings remain deferred until Hero is validated.
 
 ## Architecture principles
 
 - Runtime code is generic. Consumer-specific domains, branding, content IDs and secrets do not belong in plugin code.
 - Public content endpoints are read-only.
-- Administrative/private endpoints must use authentication, capability checks and explicit `permission_callback` functions.
+- Administrative/private mutations require WordPress capabilities and nonce/auth controls where applicable.
 - Breaking REST changes must be documented and versioned.
 - Consumers depend only on the documented REST contract.
-- Outbound revalidation communicates generic resource events; consumers own framework-specific cache invalidation.
-- Provider News responses are source-of-truth responses; framework/application caching belongs at the Consumer boundary.
+- Framework-specific cache invalidation remains a Consumer concern.
+- Provider responses are the source-of-truth boundary and should not intentionally serve stale editorial state.
 
 ## Known consumer
 
@@ -97,7 +96,7 @@ Cross-repository validation is allowed when needed to prove a provider contract,
 
 GitHub Actions validates PHP syntax, regression tests and produces a version-aware installable WordPress ZIP.
 
-Before a release: validate PHP syntax, activation/deactivation, REST routes, permissions, errors, Provider freshness, revalidation security/lifecycle, documentation, changelog, consumer contract compatibility and plugin version.
+Before a release: validate PHP syntax, activation/deactivation, REST routes, permissions, errors, Provider freshness, documentation, changelog, consumer contract compatibility and plugin version.
 
 ## License
 
