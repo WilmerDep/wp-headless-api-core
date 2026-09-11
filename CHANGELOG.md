@@ -6,7 +6,7 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
-### Hero v0.3.2 candidate
+### Hero v0.3.3 candidate
 
 #### Added
 
@@ -22,7 +22,7 @@ The project follows Semantic Versioning.
 
 #### Changed
 
-- Plugin candidate version bumped to `0.3.2`.
+- Plugin candidate version bumped to `0.3.3`.
 - Core bootstrap loads the Hero module after News.
 - Hero ordering is deterministic: `menu_order ASC`, then `ID ASC`.
 - Hero queries bypass persistent query-result caching and the REST endpoint emits explicit no-store/no-cache headers.
@@ -30,6 +30,8 @@ The project follows Semantic Versioning.
 - Desktop layout places **Comportamiento** and **Accesibilidad** side by side while preserving **Imágenes** at full width.
 - The editor automatically collapses to a single column on narrower admin widths.
 - Behavior fields keep a vertical flow inside their card so controls remain readable at half-width.
+- Link sanitization now repairs the common `/https://...` / `/http://...` editor mismatch into a valid absolute URL instead of exposing a malformed root-relative target.
+- The Hero editor automatically aligns the internal/external link mode when an editor pastes a root-relative or absolute HTTP(S) destination.
 
 #### Deliberately excluded
 
@@ -39,10 +41,7 @@ The project follows Semantic Versioning.
 #### Pending validation
 
 - Install latest Hero candidate ZIP on the WordPress QA target.
-- Create multiple Hero items and validate editorial visibility.
-- Validate required primary image and optional mobile image.
-- Validate href, alt, object-position and deterministic ordering.
-- Validate `/hero` freshness on a normal refresh.
+- Complete final runtime checks for link normalization, trash/future visibility and Consumer integration.
 - Validate the first Consumer end-to-end.
 
 ## [0.2.2] - 2026-09-10
