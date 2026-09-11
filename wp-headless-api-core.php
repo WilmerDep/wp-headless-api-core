@@ -25,6 +25,7 @@ require_once HEADLESS_API_CORE_PATH . 'modules/Hero/Hero_Post_Type.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Hero/Hero_Admin.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Hero/Hero_Serializer.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Hero/Hero_Controller.php';
+require_once HEADLESS_API_CORE_PATH . 'modules/Hero/Hero_Revalidation.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Hero/Hero_Module.php';
 
 add_action( 'plugins_loaded', array( 'HeadlessApiCore\\Core\\Plugin', 'boot' ) );
