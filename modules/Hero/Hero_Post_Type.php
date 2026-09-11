@@ -146,6 +146,10 @@ final class Hero_Post_Type {
 	 * Sanitize an optional Hero target while preserving headless-friendly
 	 * relative paths and allowing only absolute HTTP(S) URLs.
 	 *
+	 * Also repairs the common editor mistake `/https://example.org/...` caused
+	 * by pasting an absolute URL while the internal-link mode is selected. The
+	 * result remains constrained to root-relative or absolute HTTP(S) targets.
+	 *
 	 * @param mixed $value Raw target.
 	 * @return string
 	 */
@@ -158,6 +162,10 @@ final class Hero_Post_Type {
 
 		if ( preg_match( '/[\x00-\x1F\x7F]/', $value ) ) {
 			return '';
+		}
+
+		if ( preg_match( '#^/(https?://.+)$#i', $value, $matches ) ) {
+			$value = $matches[1];
 		}
 
 		if ( 0 === strpos( $value, '/' ) ) {
