@@ -8,13 +8,10 @@ This document records known consumers of Headless API Core. Integration records 
 
 For the current HOSGEDOPOL project:
 
-- this repository owns the WordPress plugin, REST contracts, provider serialization, provider security, provider validation and plugin releases;
+- this repository owns the WordPress plugin, REST contracts, provider serialization, provider security, provider lifecycle signaling, provider validation and plugin releases;
 - `WilmerDep/hosgedopol-web` is a separate Consumer application and has its own development workstream;
-- implementation work inside the Consumer is not considered plugin/backend implementation for this repository;
-- cross-repository changes are allowed when they are required to prove or wire a Provider contract end-to-end, but they must be documented in both repositories;
-- after a cross-repository validation is complete, normal feature development returns to the repository that owns that responsibility.
-
-This distinction is important so that Provider evolution does not become coupled to a specific frontend or application repository.
+- framework-specific cache invalidation remains Consumer-owned;
+- cross-repository changes are allowed only when needed to prove or wire a Provider contract end-to-end and must be documented in both repositories.
 
 ## HOSGEDOPOL
 
@@ -39,94 +36,98 @@ This distinction is important so that Provider evolution does not become coupled
 
 - `headless-core/v1`
 
-**Current provider contract**
+## News integration history
 
-- v0.1.0: Health baseline.
-- v0.2.0: initial News collection/detail candidate deployed and technically integrated.
-- v0.2.1: current backward-compatible News patch candidate; preserves WordPress site-timezone timestamps and adds `author.name`.
+- v0.2.0: initial News collection/detail integration.
+- v0.2.1: WordPress site-timezone timestamp correction + `author.name`.
+- v0.2.2: current candidate adding signed editorial lifecycle revalidation while keeping the v0.2.1 public GET contract backward-compatible.
 
-**News consumer integration status**
+The Consumer already uses:
 
-The first real Consumer wiring has been implemented in the separate `hosgedopol-web` repository on branch:
+- `/noticias` from `GET /headless-core/v1/news`;
+- `/noticias/[slug]` from `GET /headless-core/v1/news/{slug}`;
+- Provider-backed Home News;
+- Provider-backed News results in search/autocomplete.
 
-```text
-feature/news-headless-consumer
-```
-
-Consumer PR:
-
-```text
-WilmerDep/hosgedopol-web#2
-feat: connect public News to Headless API Core
-```
-
-The Consumer integration currently covers:
-
-- `/noticias` using `GET /headless-core/v1/news`;
-- `/noticias/[slug]` using `GET /headless-core/v1/news/{slug}`;
-- Home News using the latest Provider items;
-- `/buscar` including Provider-backed News results;
-- desktop/mobile header autocomplete through an internal Consumer search route;
-- a temporary local fallback for one manually created News article until it is migrated into WordPress;
-- deduplication by slug so the Provider version wins automatically after that migration.
-
-No HOSGEDOPOL-specific Consumer logic is added to the plugin runtime because of this integration.
-
-**End-to-end validation checkpoint**
-
-Consumer workflow `Frontend Build #30` (`run 34424685876`) completed successfully against the original v0.2.0 News candidate and included:
-
-1. live Provider contract smoke test against the deployed WordPress CMS;
-2. Next.js production build;
-3. runtime smoke test of the built Consumer routes.
-
-The live Provider smoke verified Health, News collection, News detail and the expected unknown-slug 404 contract. The runtime Consumer smoke then verified the technical path:
+The Consumer currently uses cache/revalidation tags including:
 
 ```text
-WordPress CMS
-  -> Headless API Core
-  -> Consumer adapter
-  -> Next.js production build
-  -> public News/search routes
+headless-news
+headless-news:{slug}
 ```
 
-Final Consumer QA then found a real late-night date discrepancy caused by v0.2.0 forcing GMT serialization. Therefore the Consumer must be revalidated against v0.2.1 before News is considered release-ready.
+Final Consumer implementation may also invalidate relevant paths such as Home, `/noticias`, detail paths and `/buscar`. Those Next.js mechanics are not part of plugin runtime.
 
-**v0.2.1 Consumer contract delta**
+## v0.2.2 HOSGEDOPOL revalidation target
 
-Existing routes remain unchanged. Consumer-visible changes are:
+Expected Consumer route:
 
 ```text
-publishedAt -> ISO 8601 in WordPress site timezone with offset
-modifiedAt  -> ISO 8601 in WordPress site timezone with offset
-author      -> { name: <WordPress display_name> }
+https://dev.hosgedopol.gob.do/api/headless/revalidate
 ```
 
-The Consumer should not expect or depend on any additional WordPress user-account fields.
+This exact URL belongs in HOSGEDOPOL deployment configuration, **not** in generic plugin source.
 
-**Temporary local-only News migration**
-
-One News article still exists only in the Consumer source during transition:
+Provider private configuration should resolve to:
 
 ```text
-visita-del-director-al-hospital-general-docente-de-la-policia-nacional
+HEADLESS_REVALIDATION_URL=https://dev.hosgedopol.gob.do/api/headless/revalidate
+HEADLESS_REVALIDATION_SECRET=<same private secret configured on Consumer>
 ```
 
-It must be migrated into the WordPress CMS before the Consumer removes its local fallback. The preferred transport under evaluation is Zippy from a WordPress origin; WXR remains an alternative. This migration concern must not become permanent HOSGEDOPOL-specific runtime code in Headless API Core.
+The Consumer must configure the same private `HEADLESS_REVALIDATION_SECRET` in its server environment. It must not use `NEXT_PUBLIC_*` or expose the secret to browser code.
 
-**Minimum compatible plugin version for final HOSGEDOPOL News cutover**
+Signing contract:
 
-- `0.2.1` or a later backward-compatible News version.
+```text
+X-Headless-Timestamp: <unix-seconds>
+X-Headless-Signature: sha256=<HMAC-SHA256(timestamp + "." + raw_body)>
+```
+
+Consumer requirements:
+
+- verify signature against the exact raw body;
+- reject stale timestamps outside the configured replay window (initial recommendation: 300 seconds);
+- use timing-safe signature comparison;
+- accept `resource="news"` only for this first phase;
+- invalidate current slug, previous slug when changed, general News data and affected public surfaces;
+- return non-2xx for invalid signature/payload;
+- retain a short News TTL around 60 seconds as convergence fallback if webhook delivery fails.
+
+Full contract: `docs/REVALIDATION.md`.
+
+## Lifecycle QA opened from staging
+
+HOSGEDOPOL staging exposed a real cache-lifecycle discrepancy: WordPress correctly stopped returning a draft/trashed News detail while a cached Consumer collection could retain its card temporarily.
+
+Provider visibility was already correct (`post_status=publish`, non-password-protected only). v0.2.2 adds the signed invalidation signal needed for Consumer cache freshness without coupling WordPress to Next.js implementation details.
+
+Required end-to-end transitions before release:
+
+- draft → publish;
+- future → publish after WordPress executes the real scheduled transition;
+- publish → draft/private/trash/future;
+- publish → publish edit;
+- published slug change invalidating old and new keys;
+- permanent deletion;
+- failed webhook without blocking WordPress save/publication.
+
+## Temporary Consumer fallback boundary
+
+v0.2.2 does not modify or remove any Consumer-local fallback content. Any temporary `news-manual.ts` retirement remains a separate Consumer deployment decision after that Consumer confirms its own migration/cutover state.
+
+The Provider lifecycle implementation must work whether a Consumer currently has zero, one or many local fallback slugs.
 
 ## Cross-repository rule
 
-When a REST contract used by a consumer changes, review and update documentation in both provider and consumer repositories. The consumer must never depend on internal PHP classes, WordPress table structure or plugin implementation details.
-
-When this repository performs a necessary cross-repository validation or wiring step, record at minimum:
+When a Provider contract used by a Consumer changes, record at minimum:
 
 - Provider version/branch;
-- Consumer repository/branch or PR;
-- contract endpoints involved;
+- Consumer repository/branch or deployment;
+- endpoint/payload involved;
 - automated validation evidence;
+- runtime/staging validation evidence;
 - remaining release gates;
-- whether any temporary compatibility/fallback behavior exists.
+- any temporary compatibility/fallback behavior.
+
+Consumers must never depend on internal PHP classes, WordPress table structure or plugin directory layout.

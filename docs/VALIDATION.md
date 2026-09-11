@@ -1,191 +1,251 @@
 # Validation
 
-This document records runtime validation evidence for Headless API Core.
+This document records release-gate and runtime evidence for Headless API Core.
 
-## HOSGEDOPOL CMS — v0.1.0
-
-Target CMS: `https://cms.hosgedopol.gob.do`
-
-### 2026-09-08
-
-- [x] Installable ZIP uploaded successfully through WordPress administration.
-- [x] Plugin recognized as **Headless API Core**.
-- [x] Plugin version reported as `0.1.0`.
-- [x] Plugin activated successfully.
-- [x] WordPress Plugins administration remained usable after activation.
-- [x] `GET /wp-json/headless-core/v1/health` returns successfully from the target CMS.
-- [x] Health response matches the documented v0.1.0 contract: `ok=true`, `service="Headless API Core"`, `version="0.1.0"`.
-- [x] Plugin deactivation/reactivation smoke test completed later during the v0.2.0 release preflight; the plugin reactivated successfully and the public REST namespace remained healthy.
-
-### Runtime approval
-
-Bootstrap + Health is runtime-approved on the HOSGEDOPOL CMS as of 2026-09-08. News development proceeded from this validated provider baseline.
-
-The deactivation/reactivation preflight was completed successfully during the v0.2.0 release gate.
-
----
-
-## HOSGEDOPOL CMS — News v0.2.0 candidate
+## HOSGEDOPOL CMS baseline
 
 Target CMS: `https://cms.hosgedopol.gob.do`
 
-### 2026-09-08
+### v0.1.0 — Bootstrap + Health
 
-- [x] Candidate ZIP installed over v0.1.0 without blocking WordPress administration.
-- [x] `GET /wp-json/headless-core/v1/news` returns real native WordPress posts.
-- [x] Collection response contains normalized `items` and `pagination` objects.
-- [x] Default collection page returns 12 items.
-- [x] Initial runtime snapshot reported 83 published public items across 7 pages; a later content snapshot reported 88 items across 8 pages. This confirms pagination is based on the live published inventory rather than a fixed count.
-- [x] News items expose IDs, slugs, titles, excerpts, publication/modification dates, featured images and categories.
-- [x] Featured image metadata is being resolved from the WordPress Media Library.
-- [x] Native WordPress category data is being normalized into the provider contract.
-- [x] JSON Unicode escaping observed in the browser is valid JSON behavior and not a character-encoding failure.
-- [x] Encoded excerpt entities such as `&hellip;` were normalized; the retested collection now returns decoded plain text such as `[…]`.
-- [x] `GET /wp-json/headless-core/v1/news/{slug}` validated with published post ID `23910`.
-- [x] News detail `content` returns rendered WordPress block HTML.
-- [x] News detail `seo` returns the provider-owned SEO object with Yoast detected as the source.
-- [x] Runtime SEO validation identified the CMS branding suffix `CMS API HOSGEDOPOL` in Yoast-generated title values.
-- [x] First SEO cleanup attempt based on `get_bloginfo( 'name' )` was retested and did not remove the runtime suffix, proving Yoast's generated branding is not reliably identical to the WordPress blog name in this installation.
-- [x] Feature branch now uses a more robust provider rule: when Yoast returns the native post title followed by a separator and additional CMS branding, expose the native title instead. This avoids hardcoding institution-specific CMS names while preserving genuinely custom SEO titles.
-- [x] Robust SEO-title cleanup retested successfully on post ID `23910`: both `seo.title` and `seo.openGraph.title` now match the native public post title and no longer expose the internal `CMS API HOSGEDOPOL` suffix.
-- [x] Legacy content observation: post ID `23916` has a percent-encoded WordPress source slug and decorative mathematical Unicode text. The provider intentionally preserves the native source slug; editorial permalink cleanup belongs in WordPress rather than silent API rewriting.
-- [x] Unknown slug runtime test returns `code="headless_core_news_not_found"`, `message="News item not found."` and HTTP status `404`.
-- [x] Pagination runtime test with `page=2&per_page=5` returns exactly five items and reports `page=2`, `perPage=5`, `totalItems=88`, `totalPages=18`.
-- [x] A runtime experiment with `orderby=title&order=asc` reached WordPress title ordering, but the visible normalized titles exposed legacy source-title collation artifacts. Because the current News consumer does not require alphabetical ordering, `title` ordering was removed from the v0.2.0 candidate instead of freezing surprising semantics.
-- [x] Narrowed ordering revalidated with `orderby=date&order=asc&per_page=5`: the CMS returned five items in strictly ascending publication order from `2024-03-06` through `2024-06-27`.
-- [x] Yoast-unavailable fallback behavior is covered by an isolated CI regression test. With no global `YoastSEO()` function, the serializer returns `source="wordpress"`, the native title/excerpt, and the native featured image in Open Graph. The CI job executes this test before packaging and passed on the News feature branch.
+- [x] Installable ZIP recognized by WordPress.
+- [x] Activation succeeded without blocking wp-admin.
+- [x] `GET /wp-json/headless-core/v1/health` returned the documented contract.
+- [x] A later deactivation/reactivation smoke confirmed the REST namespace survives the activation cycle.
 
-### 2026-09-09 — deactivation/reactivation release preflight
+### v0.2.0 — initial News pilot
 
-- [x] Headless API Core v0.2.0 was manually deactivated and reactivated from WordPress administration.
-- [x] The plugin returned to the active state without blocking WordPress administration.
-- [x] After reactivation, `GET /wp-json/headless-core/v1/health` returned `ok=true`, `service="Headless API Core"`, `version="0.2.0"`.
-- [x] After reactivation, `GET /wp-json/headless-core/v1/news` returned the live paginated News collection successfully.
-- [x] No REST namespace regression was observed after the activation cycle.
+- [x] Native WordPress posts exposed through `/news`.
+- [x] Pagination and chronological `date|modified` ordering validated.
+- [x] Detail HTML, featured images, categories and provider-owned SEO validated.
+- [x] Unknown/unpublished News detail returns `headless_core_news_not_found` with HTTP 404.
+- [x] Yoast-unavailable SEO fallback covered by isolated regression test.
+- [x] Technical Provider → HOSGEDOPOL Consumer integration passed build/runtime smoke.
+- [ ] Promotion to `main` intentionally stopped after final QA found GMT serialization could move late-night editorial dates to the following day.
 
-### Approval status
+### v0.2.1 — site timezone + public author
 
-The v0.2.0 Provider passed its original runtime and activation checks, but final HOSGEDOPOL Consumer QA later exposed an editorial timezone defect. v0.2.0 is therefore **not** eligible for promotion to `main`; it is superseded by the v0.2.1 News patch candidate documented below.
+- [x] `publishedAt` preserves WordPress site-local editorial time and offset.
+- [x] `modifiedAt` uses the same timezone semantics.
+- [x] Concrete late-night case remained `2026-09-09T23:31:20-04:00` instead of becoming September 10 UTC.
+- [x] Collection/detail expose only `author.name` from WordPress `display_name`.
+- [x] No email, login, username, roles, capabilities or credentials exposed.
+- [x] Health reported `0.2.1` on the real CMS.
+- [x] Collection/detail/404 and real Consumer rendering were revalidated.
+- [x] v0.2.1 merged into `develop`.
+
+Final Consumer QA then exposed a separate cache-lifecycle problem. Follow-up runtime testing also showed that the public Provider `/news` response itself could remain stale for several refreshes after an editorial transition, so v0.2.2 now hardens both Provider freshness and Consumer revalidation rather than treating the issue as Consumer-only.
 
 ---
 
-## Cross-repository validation — HOSGEDOPOL Consumer
+## News v0.2.2 — editorial lifecycle + signed revalidation
 
-Consumer repository: `WilmerDep/hosgedopol-web`
-
-Consumer branch: `feature/news-headless-consumer`
-
-Consumer PR: `#2 — feat: connect public News to Headless API Core`
-
-Provider baseline: News v0.2.0 contract from `wp-headless-api-core/develop`, followed by v0.2.1 patch validation.
-
-### 2026-09-09 — original v0.2.0 technical integration
-
-The Provider was exercised by a real Consumer integration without adding Consumer-specific runtime behavior to this plugin.
-
-Consumer workflow `Frontend Build #30` (`run 34424685876`) completed with `success` and included the following independent checkpoints:
-
-- [x] `Validate live Headless News contract`.
-- [x] `Build production bundle`.
-- [x] `Smoke test public News consumer`.
-
-The live contract smoke validated against the deployed WordPress CMS:
-
-- [x] `/headless-core/v1/health` returns a healthy Provider response.
-- [x] `/headless-core/v1/news` returns a valid paginated collection.
-- [x] a collection item can be resolved through `/headless-core/v1/news/{slug}`.
-- [x] detail content and SEO objects satisfy the Consumer's expected contract.
-- [x] an unknown News slug returns HTTP 404 with `headless_core_news_not_found`.
-
-The Consumer runtime smoke then exercised the built Next.js application and confirmed the technical path:
+Branch:
 
 ```text
-WordPress CMS
-  -> Headless API Core
-  -> Consumer adapter
-  -> Next.js production runtime
-  -> public News/search routes
+fix/news-revalidation-lifecycle
 ```
 
-### 2026-09-10 — v0.2.1 Consumer detail checkpoint
-
-After installing the corrected Provider candidate, the public Consumer detail for `prueba-de-consumo-api-headless` was visually exercised and showed:
-
-- [x] publication date `9 de septiembre de 2026`;
-- [x] publication time `11:31 P. M.`;
-- [x] public author `HOSGEDOPOL`;
-- [x] Provider-backed title, featured image, article content and inline/gallery media rendered successfully.
-
-This confirms the corrected timestamp and author data are reaching the real Consumer detail surface. It is a focused end-to-end checkpoint, **not** a substitute for the remaining full Consumer staging QA across Home, catalog, search, autocomplete, navigation, related content, fallback and responsive behavior.
-
-### Scope boundary
-
-This cross-repository wiring is recorded here because it validates the plugin contract end-to-end. The Consumer application has its own development workstream and is not owned by this plugin repository.
-
-Future Consumer-side UI/backend work should remain in its own project unless another cross-repository change is specifically required to validate a Provider contract. Any such exception must be documented in both repositories.
-
-### Remaining gates outside the Provider
-
-- [ ] full visual QA of News surfaces against the corrected v0.2.1 Provider;
-- [ ] full staging smoke test at `dev.hosgedopol.gob.do` against v0.2.1;
-- [ ] migration of the one local-only News article into WordPress before removing Consumer fallbacks;
-- [ ] final Consumer cutover and fallback removal.
-
-The local-only article is currently identified by slug:
+Issue:
 
 ```text
-visita-del-director-al-hospital-general-docente-de-la-policia-nacional
+#5 — News v0.2.2: lifecycle editorial y revalidación HMAC
 ```
 
-Its transport into WordPress is expected to use Zippy or WXR outside the permanent Headless API Core runtime.
+### Scope
 
----
+v0.2.2 keeps the v0.2.1 public GET contract compatible, hardens Provider freshness, and adds an authenticated outbound lifecycle channel so decoupled Consumers can invalidate cache as WordPress editorial state changes.
 
-## HOSGEDOPOL CMS — News v0.2.1 patch candidate
+Hero, Services, Directory, Galleries and Settings remain paused until this gate closes.
 
-### QA finding that triggered the patch
+### Provider public-only invariant
 
-During final Consumer QA, the real WordPress post **“Prueba de consumo api headless”** was published in WordPress on `09/09/2026` at `23:31` local editorial time, while the Provider/Consumer displayed `10/09/2026`.
+Automated regression coverage confirms:
 
-Root cause in `modules/News/News_Serializer.php`:
+- [x] collection queries `post_status=publish`;
+- [x] collection excludes password-protected posts;
+- [x] draft detail returns News 404;
+- [x] pending detail returns News 404;
+- [x] private detail returns News 404;
+- [x] trash detail returns News 404;
+- [x] future detail returns News 404 before WordPress actually publishes it;
+- [x] password-protected publish detail returns News 404;
+- [x] normal published public detail remains available.
 
-```php
-get_post_time( DATE_ATOM, true, $post )
-get_post_modified_time( DATE_ATOM, true, $post )
+Revalidation does not make private editorial states public. It only accelerates Consumer cache convergence.
+
+### Provider freshness hardening
+
+Runtime finding on HOSGEDOPOL before the hardening patch:
+
+- [x] a `publish -> draft` transition eventually disappeared from the Provider and Consumer;
+- [x] the Provider itself could require multiple refreshes before `/news` reflected the new state;
+- [x] this proved the stale behavior was not exclusively a Next.js/browser cache concern.
+
+Candidate hardening now enforces:
+
+- [x] collection `WP_Query` uses `cache_results=false`;
+- [x] detail uses an explicit published-only `WP_Query` with `cache_results=false` instead of a path lookup that may participate in persistent object caching;
+- [x] News REST success responses receive `Cache-Control: no-store, no-cache, must-revalidate, max-age=0`;
+- [x] News REST errors/404s receive the same policy through `rest_post_dispatch`;
+- [x] compatibility headers `Pragma: no-cache` and `Expires: 0` are included;
+- [x] unrelated REST routes are not modified by the News cache policy.
+
+A one-time host/CDN cache purge may be required when deploying this hardening if an upstream layer already cached the old Provider response. After rollout, one normal refresh of `/news` and `/news/{slug}` must reflect the current WordPress state without waiting for a TTL.
+
+### Lifecycle implementation
+
+Registered hooks:
+
+```text
+transition_post_status
+post_updated
+save_post_post
+set_object_terms
+added_post_meta
+updated_post_meta
+deleted_post_meta
+before_delete_post
+shutdown
 ```
 
-The second argument forced GMT/UTC serialization. For a UTC-04:00 WordPress installation, a publication at 23:31 local time becomes 03:31 UTC on the following calendar day.
+Coverage/rationale:
 
-### v0.2.1 implementation contract
+- `transition_post_status`: actual visibility transitions including `draft/future -> publish` and `publish -> draft/private/trash/future`;
+- `post_updated`: previous slug/status plus `publish -> publish` edits;
+- `save_post_post`: published-save safety net after normal editorial persistence;
+- `set_object_terms`: category changes;
+- post-meta hooks: featured image (`_thumbnail_id`) and Yoast (`_yoast_wpseo_*`) changes;
+- `before_delete_post`: permanent deletion;
+- `shutdown`: deduplicated delivery after request-local editing hooks finish.
 
-- [x] `publishedAt` now requests WordPress site-local time and preserves the site timezone offset in ISO 8601.
-- [x] `modifiedAt` now uses the same site-timezone semantics.
-- [x] Collection/detail payloads add `author.name` from the post author's WordPress `display_name`.
-- [x] Author serialization intentionally exposes no email, login/username, roles, capabilities, credentials or other user fields.
-- [x] Existing `/news` and `/news/{slug}` routes remain unchanged.
-- [x] Existing pagination and `orderby=date|modified` query behavior remains unchanged.
-- [x] Isolated regression test covers the concrete `2026-09-09T23:31:00-04:00` case plus `modifiedAt` and author privacy boundary.
-- [x] A reusable live smoke test was added for collection/detail timestamps, author, chronological ordering and 404.
-- [x] CI/package validation is green on the patch branch/PR.
+Separate trash/untrash delivery hooks are intentionally not registered because transitions across the public `publish` boundary are already represented by `transition_post_status` and duplicate hook families would cause redundant events.
 
-### 2026-09-10 — live release-gate validation
+### Request-local deduplication
 
-- [x] Candidate v0.2.1 installed on the HOSGEDOPOL CMS.
-- [x] `/wp-json/headless-core/v1/health` returned `ok=true`, `service="Headless API Core"`, `version="0.2.1"`.
-- [x] `/news` returned the live collection successfully.
-- [x] Test post `prueba-de-consumo-api-headless` returned `publishedAt="2026-09-09T23:31:20-04:00"`, preserving the editorial calendar day and site offset.
-- [x] The same post returned `modifiedAt="2026-09-09T23:34:04-04:00"`.
-- [x] Collection payload exposed `author.name` only; the test post returned `HOSGEDOPOL` and other visible posts returned editorial display names such as `Jessica Tejada`.
-- [x] No email, login/username, roles, capabilities or other author-account fields were visible in the public author object.
-- [x] Visible collection order remained descending by publication date/time: the 2026-09-09 test post preceded 2026-08-03 and 2026-07-31 items.
-- [x] The real Consumer detail route rendered the corrected date, time and author plus article content/media, confirming the Provider detail path remains functionally consumable after the patch.
-- [x] Unknown slug `somos%20pepa` returned HTTP 404 with `code="headless_core_news_not_found"`, `message="News item not found."`, `data.status=404`.
-- [x] Latest PR-head CI `Validate and Build` #58 passed on commit `4ef8848c66dfa5468dc749768e07473f63b8f095`.
+- [x] overlapping transition/post-update/save hooks aggregate by post ID;
+- [x] event priority is `deleted > status_changed > slug_changed > content_updated`;
+- [x] latest current slug/status wins;
+- [x] a real previous slug/status is preserved when available;
+- [x] draft-only saves that never cross the public boundary emit no public revalidation event.
 
-### Release-gate status
+### Payload contract
 
-Provider-side v0.2.1 validation is **PASS** for Health, collection timestamps, modification timestamp, author privacy boundary, observed chronological ordering, functional Consumer detail path and deterministic 404 behavior.
+```json
+{
+  "resource": "news",
+  "postId": 123,
+  "slug": "noticia-actual",
+  "previousSlug": "noticia-anterior",
+  "status": "draft",
+  "previousStatus": "publish",
+  "event": "status_changed"
+}
+```
 
-The existing detail serializer continues to inherit the same summary fields (`publishedAt`, `modifiedAt`, `author`) before appending `content` and `seo`; the focused Consumer detail checkpoint confirms those values are reaching the rendered article. A direct raw-detail JSON re-inspection of the SEO object was not captured in this checkpoint, but the SEO implementation itself was unchanged by v0.2.1 and remains covered by the previously validated News detail contract and SEO fallback regression.
+Supported event values:
 
-Stable promotion to `main` remains blocked only by the **full HOSGEDOPOL Consumer staging QA/cutover gate** and the planned local-only article migration/fallback retirement. No later content module should begin before that release gate is formally closed.
+```text
+status_changed
+slug_changed
+content_updated
+deleted
+```
+
+Permanent deletion uses terminal `status="deleted"` because no WordPress post status remains afterward.
+
+### HMAC/security regression
+
+Provider headers:
+
+```text
+X-Headless-Timestamp: <unix-seconds>
+X-Headless-Signature: sha256=<lowercase-hmac-sha256-hex>
+```
+
+Signature input:
+
+```text
+<timestamp>.<exact raw JSON request body>
+```
+
+- [x] HMAC SHA-256 output regression-tested.
+- [x] delivered raw body is exactly the body used for signing.
+- [x] shared secret is not present in the payload.
+- [x] target requires HTTPS by default.
+- [x] redirects are disabled for outbound delivery.
+- [x] secret requires at least 32 characters.
+- [x] transport failure returns a safe failure instead of throwing into the editorial operation.
+- [x] failure logging does not expose secret/signature.
+- [x] delivery result can be observed through `headless_api_core_revalidation_delivery`.
+
+Consumer requirements are documented in `docs/REVALIDATION.md`, including timing-safe comparison and a recommended 300-second replay window.
+
+### Automated CI checkpoint
+
+Previous workflow checkpoint:
+
+```text
+Validate and Build #98
+Run ID: 34532197216
+Commit: 7f0eb0c213c8b03fed232bf7a8fada078f6cf8cd
+Result: SUCCESS
+```
+
+That checkpoint passed:
+
+- [x] PHP lint;
+- [x] News SEO fallback test;
+- [x] News timezone + author test;
+- [x] News public visibility test;
+- [x] News revalidation HMAC/signature + safe failure test;
+- [x] News lifecycle hook registration test;
+- [x] News lifecycle event/deduplication test;
+- [x] plugin version resolution;
+- [x] v0.2.2 ZIP build;
+- [x] artifact upload.
+
+The Provider freshness hardening above was added after that checkpoint, so the **latest candidate-head CI must pass again** before the refreshed ZIP is installed on the CMS.
+
+### Reusable live smoke
+
+`tests/news-live-smoke.php` can validate the normal public contract plus optional lifecycle state using:
+
+```text
+HEADLESS_CORE_API_URL
+HEADLESS_EXPECTED_VERSION
+HEADLESS_EXPECTED_TIMEZONE_OFFSET
+HEADLESS_EXPECT_PRESENT_SLUG
+HEADLESS_EXPECT_ABSENT_SLUG
+```
+
+This test is intentionally not part of default CI because CI must not depend on one external WordPress installation.
+
+### HOSGEDOPOL runtime lifecycle gate — pending
+
+Provider target: `https://cms.hosgedopol.gob.do`
+Consumer staging: `https://dev.hosgedopol.gob.do`
+
+The following checks remain required on the real CMS + Consumer before v0.2.2 can merge/promote:
+
+- [ ] After deploying Provider freshness hardening, `publish -> draft` is reflected by `/news` on the first normal refresh without clearing browser cache manually.
+- [ ] Create a News item as draft → absent from Provider and Consumer.
+- [ ] draft → publish → appears practically immediately.
+- [ ] publish → draft → disappears practically immediately and detail is 404.
+- [ ] republish → reappears.
+- [ ] publish → private → disappears.
+- [ ] publish → trash → disappears.
+- [ ] restore and publish → reappears.
+- [ ] publish → publish edit updates title/excerpt/content/featured image/internal images/categories/author/dates/SEO.
+- [ ] published slug change invalidates old slug and exposes new slug.
+- [ ] permanent delete removes catalog/search/detail presence.
+- [ ] scheduled `future` post is absent before its time and appears only after WordPress/WP-Cron performs the real `future -> publish` transition.
+- [ ] deliberately failing/unreachable Consumer revalidation target does not prevent WordPress save/publication.
+- [ ] Provider still returns only public News throughout the complete lifecycle.
+- [ ] Consumer keeps a short fallback TTL (recommended ~60 seconds) so a missed webhook still converges.
+
+### Release status
+
+v0.2.2 is **implementation/automated-test ready but not runtime-approved yet**.
+
+Do not merge the lifecycle candidate into `develop`, promote News to `main`, or resume Hero until Provider freshness + signed HOSGEDOPOL Consumer revalidation both pass the real lifecycle checklist above.

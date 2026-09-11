@@ -4,24 +4,36 @@
  *
  * Usage:
  * HEADLESS_CORE_API_URL="https://cms.example.org/wp-json/headless-core/v1" \
+ * HEADLESS_EXPECTED_VERSION="0.2.2" \
  * HEADLESS_EXPECTED_TIMEZONE_OFFSET="-04:00" \
+ * HEADLESS_EXPECT_PRESENT_SLUG="published-test" \
+ * HEADLESS_EXPECT_ABSENT_SLUG="draft-or-trashed-test" \
  * php tests/news-live-smoke.php
+ *
+ * The present/absent slug checks are optional and are intended for editorial
+ * lifecycle QA after changing a real post status in the target CMS.
  *
  * This test is intentionally not executed by default in CI because CI must not
  * depend on a particular external WordPress installation. Run it after a
  * candidate ZIP is deployed to a target CMS.
  */
 
-$api_url = getenv( 'HEADLESS_CORE_API_URL' );
-$offset  = getenv( 'HEADLESS_EXPECTED_TIMEZONE_OFFSET' );
+$api_url          = getenv( 'HEADLESS_CORE_API_URL' );
+$offset           = getenv( 'HEADLESS_EXPECTED_TIMEZONE_OFFSET' );
+$expected_version = getenv( 'HEADLESS_EXPECTED_VERSION' );
+$present_slug     = getenv( 'HEADLESS_EXPECT_PRESENT_SLUG' );
+$absent_slug      = getenv( 'HEADLESS_EXPECT_ABSENT_SLUG' );
 
 if ( ! is_string( $api_url ) || '' === trim( $api_url ) ) {
 	fwrite( STDERR, "HEADLESS_CORE_API_URL is required.\n" );
 	exit( 1 );
 }
 
-$api_url = rtrim( trim( $api_url ), '/' );
-$offset  = is_string( $offset ) ? trim( $offset ) : '';
+$api_url          = rtrim( trim( $api_url ), '/' );
+$offset           = is_string( $offset ) ? trim( $offset ) : '';
+$expected_version = is_string( $expected_version ) ? trim( $expected_version ) : '';
+$present_slug     = is_string( $present_slug ) ? trim( $present_slug ) : '';
+$absent_slug      = is_string( $absent_slug ) ? trim( $absent_slug ) : '';
 
 function smoke_assert( $condition, $message ) {
 	if ( ! $condition ) {
@@ -35,7 +47,7 @@ function smoke_get_json( $url ) {
 			'http' => array(
 				'method'        => 'GET',
 				'ignore_errors' => true,
-				'header'        => "Accept: application/json\r\nUser-Agent: Headless-API-Core-Live-Smoke/1.0\r\n",
+				'header'        => "Accept: application/json\r\nUser-Agent: Headless-API-Core-Live-Smoke/1.1\r\n",
 				'timeout'       => 20,
 			),
 		)
@@ -84,10 +96,36 @@ function validate_author( $author ) {
 	smoke_assert( is_string( $author['name'] ) && '' !== trim( $author['name'] ), 'author.name is required.' );
 }
 
+function smoke_catalog_contains_slug( $api_url, $slug ) {
+	$page = 1;
+	$encoded_slug = rawurldecode( $slug );
+
+	do {
+		list( $status, $collection ) = smoke_get_json(
+			$api_url . '/news?page=' . $page . '&per_page=50&orderby=date&order=desc'
+		);
+		smoke_assert( 200 === $status, 'News collection scan must return HTTP 200.' );
+
+		foreach ( $collection['items'] ?? array() as $item ) {
+			if ( rawurldecode( (string) ( $item['slug'] ?? '' ) ) === $encoded_slug ) {
+				return true;
+			}
+		}
+
+		$total_pages = max( 1, (int) ( $collection['pagination']['totalPages'] ?? 1 ) );
+		++$page;
+	} while ( $page <= $total_pages );
+
+	return false;
+}
+
 try {
 	list( $health_status, $health ) = smoke_get_json( $api_url . '/health' );
 	smoke_assert( 200 === $health_status, 'Health must return HTTP 200.' );
 	smoke_assert( true === ( $health['ok'] ?? null ), 'Health must return ok=true.' );
+	if ( '' !== $expected_version ) {
+		smoke_assert( $expected_version === ( $health['version'] ?? null ), 'Unexpected plugin version from Health.' );
+	}
 	echo "✓ health\n";
 
 	list( $collection_status, $collection ) = smoke_get_json(
@@ -131,6 +169,21 @@ try {
 		'Unknown News slug must return headless_core_news_not_found.'
 	);
 	echo "✓ 404\n";
+
+	if ( '' !== $present_slug ) {
+		smoke_assert( smoke_catalog_contains_slug( $api_url, $present_slug ), 'Expected published slug is absent from collection: ' . $present_slug );
+		list( $present_status ) = smoke_get_json( $api_url . '/news/' . rawurlencode( rawurldecode( $present_slug ) ) );
+		smoke_assert( 200 === $present_status, 'Expected published slug detail must return HTTP 200.' );
+		echo "✓ expected published slug is public\n";
+	}
+
+	if ( '' !== $absent_slug ) {
+		smoke_assert( ! smoke_catalog_contains_slug( $api_url, $absent_slug ), 'Expected non-public slug still appears in collection: ' . $absent_slug );
+		list( $absent_status, $absent_detail ) = smoke_get_json( $api_url . '/news/' . rawurlencode( rawurldecode( $absent_slug ) ) );
+		smoke_assert( 404 === $absent_status, 'Expected non-public slug detail must return HTTP 404.' );
+		smoke_assert( 'headless_core_news_not_found' === ( $absent_detail['code'] ?? null ), 'Expected non-public slug must use News 404 contract.' );
+		echo "✓ expected non-public slug is absent\n";
+	}
 
 	echo "\n✓ Live News contract smoke passed.\n";
 } catch ( Throwable $error ) {

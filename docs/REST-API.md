@@ -28,11 +28,11 @@ No authentication is required for Health. The route still declares an explicit p
 
 ---
 
-## News — v0.2.1 contract candidate
+## News — v0.2.2 compatible public contract
 
-News wraps the native WordPress `post` type. The provider exposes published, non-password-protected posts only.
+News wraps the native WordPress `post` type. The Provider exposes published, non-password-protected posts only.
 
-v0.2.1 keeps the same endpoint URLs introduced in v0.2.0 while correcting editorial timestamp semantics and adding a minimal public author representation.
+v0.2.2 keeps the same public GET routes and response shapes validated in v0.2.1. The v0.2.2 change is the addition of a **signed outbound editorial revalidation channel** and Provider freshness hardening; it does not add a public mutation endpoint or expose Consumer internals through REST.
 
 ### `GET /wp-json/headless-core/v1/news`
 
@@ -47,7 +47,7 @@ Supported query parameters:
 | `order` | `desc` | `asc` or `desc` |
 | `orderby` | `date` | `date` or `modified` |
 
-`orderby=title` is intentionally not part of the contract. Legacy WordPress titles can contain source entities, punctuation or decorative Unicode that sort according to the database source value rather than the normalized public title returned by this provider. News consumers require stable chronological ordering, so ordering is limited to publication and modification dates.
+`orderby=title` is intentionally not part of the contract. News consumers require stable chronological ordering, so ordering remains limited to publication and modification dates.
 
 Collection response:
 
@@ -90,9 +90,37 @@ Collection response:
 
 `featuredImage` is `null` when no featured image exists. `categories` is always an array.
 
+### Public visibility boundary
+
+Collection queries are constrained to:
+
+```text
+post_type = post
+post_status = publish
+has_password = false
+```
+
+Draft, pending, private, trash, future-before-publication and password-protected posts are not public News items.
+
+The realtime revalidation channel does not weaken or replace this rule; it only helps Consumers discard stale cache sooner after WordPress changes the source-of-truth state.
+
+### Provider freshness/cache boundary
+
+The Provider itself is an authoritative source and must not intentionally serve a stale editorial snapshot. News collection and detail queries therefore bypass persistent `WP_Query` result caching, and News REST responses apply:
+
+```text
+Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+Pragma: no-cache
+Expires: 0
+```
+
+This policy applies to News success responses and News REST errors/404s. Consumer applications may still cache News according to their own documented strategy, including signed on-demand invalidation plus a short TTL fallback.
+
+If a hosting/CDN layer was caching News before this policy was deployed, purge that legacy cache once during rollout so subsequent origin responses can establish the new no-store policy.
+
 ### Editorial date/time boundary
 
-`publishedAt` and `modifiedAt` are serialized as ISO 8601 using the timezone configured for the WordPress site. The provider preserves the editorial wall-clock date/time and includes the site offset.
+`publishedAt` and `modifiedAt` are serialized as ISO 8601 using the timezone configured for the WordPress site. The Provider preserves the editorial wall-clock date/time and includes the site offset.
 
 For example, a post entered in a UTC-04:00 WordPress site as `09/09/2026 23:31` is exposed as:
 
@@ -100,9 +128,7 @@ For example, a post entered in a UTC-04:00 WordPress site as `09/09/2026 23:31` 
 2026-09-09T23:31:00-04:00
 ```
 
-The provider must not force that value to UTC for this contract because doing so can move a late-night editorial publication to the next calendar day when a consumer formats it naively.
-
-WordPress query ordering remains source-of-truth ordering by the native `post_date` / `post_modified` semantics selected through `orderby=date|modified`; the timezone fix changes only the serialized public representation, not the query sort field.
+WordPress query ordering remains source-of-truth ordering by native `post_date` / `post_modified` semantics selected through `orderby=date|modified`.
 
 ### Public author boundary
 
@@ -124,15 +150,15 @@ Full article HTML is intentionally omitted from the collection response to avoid
 
 ### Source slug boundary
 
-`slug` is the native published WordPress `post_name`. Headless API Core does not silently rewrite source slugs because doing so would create a second permalink identity that WordPress cannot resolve natively.
+`slug` is the native published WordPress `post_name`. Headless API Core does not silently rewrite source slugs.
 
-If legacy content contains percent-encoded or otherwise undesirable slugs, correct the permalink in WordPress editorial data before the frontend treats that URL as canonical.
+If legacy content contains undesirable slugs, correct the permalink in WordPress editorial data before the frontend treats that URL as canonical.
 
 ### `GET /wp-json/headless-core/v1/news/{slug}`
 
 Public, read-only detail endpoint.
 
-A successful response contains the same summary fields, including site-local timestamps and `author.name`, plus `content` and `seo`:
+A successful response contains the same summary fields plus `content` and `seo`:
 
 ```json
 {
@@ -161,23 +187,60 @@ A successful response contains the same summary fields, including site-local tim
 }
 ```
 
+Unknown, unpublished or password-protected slugs return HTTP `404` with WordPress REST error code:
+
+```text
+headless_core_news_not_found
+```
+
 ### SEO boundary
 
 The News detail endpoint exposes a small provider-owned SEO shape rather than leaking Yoast's raw contract to consumers.
 
 When Yoast SEO is available, Headless API Core may use its supported Surfaces API to obtain SEO title/description/Open Graph text. Native WordPress title/excerpt/image values are the fallback.
 
-Yoast-generated title values may append the WordPress CMS site name. The provider removes that trailing CMS site-name composition before returning `seo.title` and `seo.openGraph.title`; the public frontend owns final site-name composition.
-
-The provider intentionally does **not** forward CMS canonical URLs, robots directives or Schema data in this first News contract. Those values may contain CMS-domain assumptions and require the future configurable public-frontend URL strategy before they can be safely exposed.
+The provider intentionally does **not** forward CMS canonical URLs, robots directives or Schema data in this first News contract. Those values may contain CMS-domain assumptions and require a configurable public-frontend URL strategy before they can be safely exposed.
 
 Consumers must not call Yoast APIs directly as a contractual dependency of Headless API Core.
 
-### 404 behavior
+---
 
-Unknown, unpublished or password-protected slugs return HTTP `404` with WordPress REST error code:
+## News outbound revalidation — v0.2.2
 
-`headless_core_news_not_found`
+This is **not** a public REST endpoint exposed by WordPress. It is an authenticated outbound request sent by the plugin to a configured Consumer endpoint after relevant News lifecycle changes.
+
+Expected Consumer endpoint example:
+
+```text
+POST https://consumer.example.org/api/headless/revalidate
+```
+
+Payload:
+
+```json
+{
+  "resource": "news",
+  "postId": 123,
+  "slug": "noticia-actual",
+  "previousSlug": "noticia-anterior",
+  "status": "draft",
+  "previousStatus": "publish",
+  "event": "status_changed"
+}
+```
+
+Authentication headers:
+
+```text
+X-Headless-Timestamp: <unix-seconds>
+X-Headless-Signature: sha256=<hmac-sha256-hex>
+```
+
+The signature covers `<timestamp>.<raw JSON body>` with the private shared `HEADLESS_REVALIDATION_SECRET`.
+
+The Consumer owns framework-specific cache invalidation. Headless API Core does not expose or depend on Next.js `revalidateTag()` / `revalidatePath()` internals.
+
+See `docs/REVALIDATION.md` for lifecycle events, signing verification, replay-window requirements, failure semantics and configuration.
 
 ## Planned, not implemented
 
@@ -187,7 +250,7 @@ Unknown, unpublished or password-protected slugs return HTTP `404` with WordPres
 - `GET /headless-core/v1/galleries`
 - `GET /headless-core/v1/settings`
 
-These routes are not contractually available until their implementation and response schemas are documented.
+These routes remain deferred until News v0.2.2 lifecycle/revalidation is closed and promoted.
 
 ## Breaking changes
 

@@ -2,11 +2,11 @@
 
 ## Stable baseline — v0.1.0
 
-The stable runtime baseline on `main` remains the Core bootstrap and Health REST controller.
+The stable runtime baseline on `main` remains the Core bootstrap and Health REST controller until the complete News milestone is promoted.
 
 ## News — first content pilot
 
-Status: **v0.2.1 patch candidate / collection runtime QA passed / final release gate open**.
+Status: **v0.2.2 lifecycle/revalidation candidate / Provider GET contract validated / final lifecycle gate open**.
 
 News wraps the native WordPress `post` type in a provider-owned REST contract. No News CPT is introduced because native posts already model the editorial domain required by the first consumer.
 
@@ -22,32 +22,32 @@ Responsibilities:
 - normalize categories;
 - expose a small provider-owned SEO shape with optional Yoast-backed values and native WordPress fallback;
 - return deterministic 404 errors;
-- keep WordPress/Yoast implementation details behind the REST contract.
+- emit signed, generic editorial lifecycle revalidation events in v0.2.2;
+- keep Consumer/framework implementation details behind the integration contract.
 
 ### Internal split
 
-The module is intentionally divided into small responsibilities:
-
 - `News_Module`: module bootstrap;
 - `News_Controller`: route registration, request validation, querying and HTTP responses;
-- `News_Serializer`: WordPress object -> public API payload transformation.
+- `News_Serializer`: WordPress object -> public API payload transformation;
+- `News_Revalidation`: WordPress lifecycle observation, request-local deduplication and News event construction;
+- `Revalidation_Client`: generic HMAC-signed outbound transport reusable by future modules.
 
-The definitive public schema lives in `docs/REST-API.md`. Runtime validation evidence lives in `docs/VALIDATION.md`.
+The definitive public schema lives in `docs/REST-API.md`. Revalidation semantics live in `docs/REVALIDATION.md`. Runtime validation evidence lives in `docs/VALIDATION.md`.
 
 ### Current validation state
 
-- v0.2.0 original Provider runtime checks: passed, but final Consumer QA found a GMT serialization defect.
-- v0.2.1 timezone + author isolated regression test: passed.
-- v0.2.1 CI/package: passed.
-- v0.2.1 live `/news` collection on HOSGEDOPOL: passed for site-local `publishedAt`, `modifiedAt`, `author.name` privacy boundary and observed chronological ordering.
-- v0.2.1 live Health version, detail and 404 revalidation: pending.
-- Consumer visual/staging QA against v0.2.1: pending in the Consumer project.
+- v0.2.0 Provider contract: functionally validated, superseded because GMT serialization moved late-night dates.
+- v0.2.1 timezone + public author: validated on HOSGEDOPOL and merged into `develop`.
+- v0.2.2: implements realtime editorial lifecycle signaling with HMAC signing while preserving the v0.2.1 GET contract.
+- v0.2.2 automated regression/CI: pending final candidate run.
+- v0.2.2 HOSGEDOPOL CMS + Consumer lifecycle QA: pending.
 
-## Later modules
+## Later modules — paused
 
-Hero, Services, Directory, Galleries and Settings remain intentionally deferred until the News milestone is fully closed and promoted through the release gate.
+Hero, Services, Directory, Galleries and Settings remain intentionally deferred until the News v0.2.2 lifecycle/revalidation gate is fully closed and the News milestone is promoted.
 
-No later module should be started merely because its schema can be designed; the News pilot exists to validate the full editorial → REST → consumer lifecycle first.
+A preliminary Hero branch may exist for contract exploration, but no Hero implementation is eligible to continue or merge during this News gate.
 
 ## Module admission rule
 

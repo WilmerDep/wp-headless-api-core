@@ -48,6 +48,7 @@ final class News_Controller {
 	 */
 	public function register() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
+		add_filter( 'rest_post_dispatch', array( $this, 'prevent_news_http_cache' ), 10, 3 );
 	}
 
 	/**
@@ -115,6 +116,44 @@ final class News_Controller {
 	}
 
 	/**
+	 * Keep the Provider REST surface authoritative.
+	 *
+	 * News caching belongs at the Consumer boundary where lifecycle webhooks can
+	 * invalidate it intentionally. Browser, reverse-proxy or host-level caching
+	 * of the Provider itself can otherwise leave a public collection temporarily
+	 * inconsistent with WordPress editorial state.
+	 *
+	 * This applies to successful News responses and News errors/404s alike.
+	 *
+	 * @param mixed           $response REST response.
+	 * @param WP_REST_Server  $server   REST server.
+	 * @param WP_REST_Request $request  Current request.
+	 * @return mixed
+	 */
+	public function prevent_news_http_cache( $response, $server, $request ) {
+		unset( $server );
+
+		if ( ! ( $request instanceof WP_REST_Request ) || ! method_exists( $request, 'get_route' ) ) {
+			return $response;
+		}
+
+		$route  = (string) $request->get_route();
+		$prefix = '/' . Plugin::REST_NAMESPACE . '/news';
+
+		if ( $route !== $prefix && 0 !== strpos( $route, $prefix . '/' ) ) {
+			return $response;
+		}
+
+		if ( is_object( $response ) && method_exists( $response, 'header' ) ) {
+			$response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
+			$response->header( 'Pragma', 'no-cache' );
+			$response->header( 'Expires', '0' );
+		}
+
+		return $response;
+	}
+
+	/**
 	 * Return a paginated News collection.
 	 *
 	 * @param WP_REST_Request $request Current request.
@@ -137,6 +176,7 @@ final class News_Controller {
 				'order'               => $order,
 				'orderby'             => $orderby,
 				'no_found_rows'       => false,
+				'cache_results'       => false,
 			)
 		);
 
@@ -163,18 +203,32 @@ final class News_Controller {
 	/**
 	 * Return one published News item by slug.
 	 *
+	 * The detail lookup intentionally uses a fresh WP_Query rather than a cached
+	 * path lookup so an editorial visibility transition cannot leave a stale
+	 * detail response at the Provider boundary.
+	 *
 	 * @param WP_REST_Request $request Current request.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_item( WP_REST_Request $request ) {
 		$slug = (string) $request->get_param( 'slug' );
-		$post = get_page_by_path( $slug, OBJECT, 'post' );
 
-		if (
-			! $post ||
-			'publish' !== get_post_status( $post ) ||
-			! empty( $post->post_password )
-		) {
+		$query = new WP_Query(
+			array(
+				'post_type'           => 'post',
+				'post_status'         => 'publish',
+				'name'                => $slug,
+				'has_password'        => false,
+				'ignore_sticky_posts' => true,
+				'posts_per_page'      => 1,
+				'no_found_rows'       => true,
+				'cache_results'       => false,
+			)
+		);
+
+		$post = ! empty( $query->posts ) ? $query->posts[0] : null;
+
+		if ( ! $post || 'publish' !== get_post_status( $post ) || ! empty( $post->post_password ) ) {
 			return new WP_Error(
 				'headless_core_news_not_found',
 				__( 'News item not found.', 'wp-headless-api-core' ),
