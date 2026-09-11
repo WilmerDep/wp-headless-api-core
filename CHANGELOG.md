@@ -6,6 +6,16 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Hero v0.3.4 UX patch
+
+#### Changed
+
+- Hero image cards now show subtle recommended pixel guidance for editors: `1920 × 800 px` for the primary desktop/laptop/tablet image and `1200 × 750 px` for the optional mobile image.
+- When an image is already selected, the editor also shows its real original dimensions as an `Actual` chip and updates that value immediately when the image changes.
+- Removing an image clears only the `Actual` chip; the recommendation remains visible as guidance.
+- This patch changes only the WordPress editorial UI. The public `/hero` REST contract and Consumer behavior remain unchanged.
+- Plugin version bumped to `0.3.4` so WordPress loads the updated Hero admin assets without stale CSS/JS.
+
 ### Hero v0.3.3 candidate
 
 #### Added
@@ -75,7 +85,7 @@ The project follows Semantic Versioning.
 - Automated CI/package passed.
 - v0.2.2 installed on the HOSGEDOPOL CMS.
 - Provider `/news` and `/news/{slug}` reflect editorial visibility changes on a normal refresh after freshness hardening.
-- Provider-side News lifecycle/freshness gate closed and PR #6 squash-merged into `develop` at `20b134052beffcded254ac5b41384f15ec3dcda7`.
+- Provider-side News gate closed and PR #6 squash-merged into `develop` at `20b134052beffcded254ac5b41384f15ec3dcda7`.
 - Remaining skeleton/on-focus behavior belongs to the Consumer and does not block Provider development.
 
 ## [0.2.1] - 2026-09-10
