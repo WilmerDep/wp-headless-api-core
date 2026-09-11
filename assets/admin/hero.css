@@ -1,0 +1,29 @@
+.headless-hero-fields {
+	display: grid;
+	gap: 20px;
+}
+
+.headless-hero-field {
+	display: grid;
+	gap: 6px;
+}
+
+.headless-hero-field .description {
+	margin: 0;
+}
+
+.headless-hero-mobile-image-preview {
+	margin-top: 8px;
+}
+
+.headless-hero-mobile-image-preview img,
+.headless-hero-mobile-image-preview-image {
+	display: block;
+	max-width: 320px;
+	height: auto;
+	border-radius: 6px;
+}
+
+.headless-hero-remove-mobile-image {
+	margin-left: 10px;
+}
