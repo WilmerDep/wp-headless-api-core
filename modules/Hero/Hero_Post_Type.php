@@ -30,6 +30,11 @@ final class Hero_Post_Type {
 	/**
 	 * Register the editorial-only Hero CPT.
 	 *
+	 * Hero keeps only the title as a native visible editor control. Primary
+	 * image and public ordering are still stored using WordPress-native
+	 * `_thumbnail_id` / `menu_order`, but are managed by the guided Hero panel
+	 * so non-technical editors do not have to understand WordPress internals.
+	 *
 	 * @return void
 	 */
 	public function register_post_type() {
@@ -57,7 +62,7 @@ final class Hero_Post_Type {
 				'rewrite'             => false,
 				'query_var'           => false,
 				'menu_icon'           => 'dashicons-images-alt2',
-				'supports'            => array( 'title', 'thumbnail', 'page-attributes' ),
+				'supports'            => array( 'title' ),
 				'capability_type'     => 'post',
 				'map_meta_cap'        => true,
 			)
