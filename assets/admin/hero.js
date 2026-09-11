@@ -89,7 +89,27 @@
 			}
 		}
 
+		function inferLinkModeFromValue() {
+			var value = $.trim($linkInput.val());
+
+			if (!value || $linkMode.val() === 'none') {
+				return;
+			}
+
+			if (/^https?:\/\//i.test(value)) {
+				$linkMode.val('external');
+				updateLinkFields();
+				return;
+			}
+
+			if (/^\/(?!\/)/.test(value)) {
+				$linkMode.val('internal');
+				updateLinkFields();
+			}
+		}
+
 		$linkMode.on('change', updateLinkFields);
+		$linkInput.on('change blur', inferLinkModeFromValue);
 		updateLinkFields();
 
 		var $positionPreset = $('.headless-hero-position-preset');
