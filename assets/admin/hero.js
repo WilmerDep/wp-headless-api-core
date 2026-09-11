@@ -2,11 +2,41 @@
 	'use strict';
 
 	$(function () {
-		$('.headless-hero-mobile-image-control').each(function () {
+		$('.headless-hero-image-control').each(function () {
 			var $control = $(this);
 			var frame = null;
+			var $input = $control.find('.headless-hero-image-id');
+			var $preview = $control.find('.headless-hero-image-preview');
+			var $previewImage = $control.find('.headless-hero-image-preview-image');
+			var $empty = $control.find('.headless-hero-image-empty');
+			var $select = $control.find('.headless-hero-select-image');
+			var $remove = $control.find('.headless-hero-remove-image');
 
-			$control.on('click', '.headless-hero-select-mobile-image', function (event) {
+			function setSelectedState(attachment) {
+				var previewUrl = attachment.url;
+
+				if (attachment.sizes && attachment.sizes.medium && attachment.sizes.medium.url) {
+					previewUrl = attachment.sizes.medium.url;
+				}
+
+				$input.val(attachment.id);
+				$previewImage.attr('src', previewUrl).removeAttr('hidden');
+				$empty.attr('hidden', 'hidden');
+				$preview.addClass('has-image');
+				$remove.removeAttr('hidden');
+				$select.text($select.data('selected-label'));
+			}
+
+			function setEmptyState() {
+				$input.val('');
+				$previewImage.removeAttr('src').attr('hidden', 'hidden');
+				$empty.removeAttr('hidden');
+				$preview.removeClass('has-image');
+				$remove.attr('hidden', 'hidden');
+				$select.text($select.data('empty-label'));
+			}
+
+			$control.on('click', '.headless-hero-select-image', function (event) {
 				event.preventDefault();
 
 				if (frame) {
@@ -15,40 +45,65 @@
 				}
 
 				frame = wp.media({
-					title: 'Select mobile image',
-					button: { text: 'Use this image' },
+					title: $select.data('frame-title'),
+					button: { text: $select.data('frame-button') },
 					library: { type: 'image' },
 					multiple: false
 				});
 
 				frame.on('select', function () {
 					var attachment = frame.state().get('selection').first().toJSON();
-					var previewUrl = attachment.url;
-
-					if (attachment.sizes && attachment.sizes.medium && attachment.sizes.medium.url) {
-						previewUrl = attachment.sizes.medium.url;
-					}
-
-					$control.find('.headless-hero-mobile-image-id').val(attachment.id);
-					$control.find('.headless-hero-mobile-image-preview').html(
-						$('<img>', {
-							src: previewUrl,
-							alt: '',
-							class: 'headless-hero-mobile-image-preview-image'
-						})
-					);
-					$control.find('.headless-hero-remove-mobile-image').removeAttr('hidden');
+					setSelectedState(attachment);
 				});
 
 				frame.open();
 			});
 
-			$control.on('click', '.headless-hero-remove-mobile-image', function (event) {
+			$control.on('click', '.headless-hero-remove-image', function (event) {
 				event.preventDefault();
-				$control.find('.headless-hero-mobile-image-id').val('');
-				$control.find('.headless-hero-mobile-image-preview').empty();
-				$(this).attr('hidden', 'hidden');
+				setEmptyState();
 			});
 		});
+
+		var $linkMode = $('.headless-hero-link-mode');
+		var $linkTarget = $('.headless-hero-link-target');
+		var $linkInput = $('#headless-hero-href');
+		var $linkHelp = $('.headless-hero-link-help');
+
+		function updateLinkFields() {
+			var mode = $linkMode.val();
+
+			if (mode === 'none') {
+				$linkTarget.attr('hidden', 'hidden');
+				return;
+			}
+
+			$linkTarget.removeAttr('hidden');
+
+			if (mode === 'internal') {
+				$linkInput.attr('placeholder', '/servicios');
+				$linkHelp.text('Ejemplo: /servicios. No necesitas escribir el dominio.');
+			} else {
+				$linkInput.attr('placeholder', 'https://example.org/path');
+				$linkHelp.text('Escribe la dirección completa, por ejemplo https://example.org.');
+			}
+		}
+
+		$linkMode.on('change', updateLinkFields);
+		updateLinkFields();
+
+		var $positionPreset = $('.headless-hero-position-preset');
+		var $customPosition = $('.headless-hero-custom-position');
+
+		function updatePositionFields() {
+			if ($positionPreset.val() === 'custom') {
+				$customPosition.removeAttr('hidden');
+			} else {
+				$customPosition.attr('hidden', 'hidden');
+			}
+		}
+
+		$positionPreset.on('change', updatePositionFields);
+		updatePositionFields();
 	});
 })(jQuery);
