@@ -57,6 +57,12 @@ jobs:
       - name: Run Hero controller and freshness regression test
         run: php tests/hero-controller.php
 
+      - name: Run Hero lifecycle hook registration test
+        run: php tests/hero-revalidation-hooks.php
+
+      - name: Run Hero editorial lifecycle revalidation test
+        run: php tests/hero-revalidation-lifecycle.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
