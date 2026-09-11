@@ -6,6 +6,8 @@
 
 .headless-hero-editor {
 	display: grid;
+	grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+	align-items: start;
 	gap: 26px;
 	width: 100%;
 	max-width: 1180px;
@@ -14,6 +16,11 @@
 
 .headless-hero-editor [hidden] {
 	display: none !important;
+}
+
+.headless-hero-intro,
+.headless-hero-section:first-of-type {
+	grid-column: 1 / -1;
 }
 
 .headless-hero-intro {
@@ -38,7 +45,9 @@
 
 .headless-hero-section {
 	display: grid;
+	align-content: start;
 	gap: 20px;
+	min-width: 0;
 	padding: 22px 24px 24px;
 	border: 1px solid #dcdcde;
 	border-radius: 10px;
@@ -75,6 +84,15 @@
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	column-gap: 28px;
 	row-gap: 22px;
+}
+
+/* Behavior becomes one clean vertical flow inside its desktop column. */
+.headless-hero-section:nth-of-type(2) .headless-hero-form-grid {
+	grid-template-columns: 1fr;
+}
+
+.headless-hero-section:nth-of-type(2) .headless-hero-field--wide {
+	grid-column: auto;
 }
 
 .headless-hero-image-card {
@@ -236,11 +254,14 @@
 }
 
 @media screen and (max-width: 1100px) {
+	.headless-hero-editor,
 	.headless-hero-image-grid,
 	.headless-hero-form-grid {
 		grid-template-columns: 1fr;
 	}
 
+	.headless-hero-intro,
+	.headless-hero-section:first-of-type,
 	.headless-hero-field--wide {
 		grid-column: auto;
 	}
