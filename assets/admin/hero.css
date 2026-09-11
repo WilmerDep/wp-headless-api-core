@@ -1,68 +1,102 @@
+#headless-hero-settings .inside {
+	margin: 0;
+	padding: 18px 20px 22px;
+	background: #f6f7f7;
+}
+
 .headless-hero-editor {
 	display: grid;
-	gap: 22px;
-	padding: 4px 0 2px;
+	gap: 26px;
+	width: 100%;
+	max-width: 1180px;
+	padding: 2px 0;
+}
+
+.headless-hero-editor [hidden] {
+	display: none !important;
 }
 
 .headless-hero-intro {
 	display: grid;
-	gap: 4px;
-	padding: 14px 16px;
-	border: 1px solid #c3c4c7;
-	border-radius: 8px;
-	background: #f6f7f7;
+	gap: 5px;
+	padding: 16px 18px;
+	border: 1px solid #c6d7e8;
+	border-radius: 10px;
+	background: #f4f8fc;
 }
 
 .headless-hero-intro strong {
 	font-size: 14px;
+	line-height: 1.4;
 }
 
 .headless-hero-intro span {
+	max-width: 820px;
 	color: #50575e;
+	line-height: 1.55;
 }
 
 .headless-hero-section {
 	display: grid;
-	gap: 14px;
+	gap: 20px;
+	padding: 22px 24px 24px;
+	border: 1px solid #dcdcde;
+	border-radius: 10px;
+	background: #fff;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.025);
 }
 
-.headless-hero-section + .headless-hero-section {
-	padding-top: 20px;
-	border-top: 1px solid #dcdcde;
+.headless-hero-section-heading {
+	padding-bottom: 14px;
+	border-bottom: 1px solid #ececec;
 }
 
 .headless-hero-section-heading h3 {
-	margin: 0 0 3px;
-	font-size: 15px;
+	margin: 0 0 5px;
+	font-size: 16px;
+	line-height: 1.35;
 }
 
 .headless-hero-section-heading p {
+	max-width: 760px;
 	margin: 0;
 	color: #646970;
+	line-height: 1.5;
 }
 
-.headless-hero-image-grid,
+.headless-hero-image-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 20px;
+}
+
 .headless-hero-form-grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 16px;
+	column-gap: 28px;
+	row-gap: 22px;
 }
 
 .headless-hero-image-card {
 	display: grid;
 	align-content: start;
-	gap: 10px;
-	padding: 14px;
-	border: 1px solid #c3c4c7;
-	border-radius: 8px;
-	background: #fff;
+	gap: 13px;
+	min-width: 0;
+	padding: 18px;
+	border: 1px solid #dcdcde;
+	border-radius: 9px;
+	background: #fbfbfc;
 }
 
 .headless-hero-image-card-heading {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	gap: 10px;
+	gap: 12px;
+}
+
+.headless-hero-image-card-heading strong {
+	font-size: 14px;
 }
 
 .headless-hero-badge {
@@ -74,6 +108,7 @@
 	font-size: 11px;
 	font-weight: 600;
 	line-height: 1.2;
+	white-space: nowrap;
 }
 
 .headless-hero-badge.is-required {
@@ -89,11 +124,11 @@
 .headless-hero-image-preview {
 	display: grid;
 	place-items: center;
-	min-height: 180px;
+	min-height: 210px;
 	overflow: hidden;
 	border: 1px dashed #a7aaad;
-	border-radius: 7px;
-	background: #f6f7f7;
+	border-radius: 8px;
+	background: #fff;
 }
 
 .headless-hero-image-preview.has-image {
@@ -104,36 +139,40 @@
 .headless-hero-image-preview-image {
 	display: block;
 	width: 100%;
-	max-height: 240px;
+	height: 210px;
 	object-fit: cover;
 }
 
 .headless-hero-image-empty {
 	display: grid;
 	justify-items: center;
-	gap: 8px;
-	padding: 22px;
+	gap: 9px;
+	padding: 28px 22px;
 	color: #646970;
 	text-align: center;
+	line-height: 1.45;
 }
 
 .headless-hero-image-empty .dashicons {
-	width: 28px;
-	height: 28px;
-	font-size: 28px;
+	width: 32px;
+	height: 32px;
+	font-size: 32px;
 }
 
 .headless-hero-image-actions {
 	display: flex;
 	align-items: center;
-	gap: 10px;
-	min-height: 30px;
+	flex-wrap: wrap;
+	gap: 12px;
+	min-height: 32px;
+	padding-top: 2px;
 }
 
 .headless-hero-field {
 	display: grid;
 	align-content: start;
-	gap: 6px;
+	gap: 8px;
+	min-width: 0;
 }
 
 .headless-hero-field--wide {
@@ -142,18 +181,38 @@
 
 .headless-hero-field > label {
 	font-weight: 600;
+	line-height: 1.35;
 }
 
 .headless-hero-field select,
 .headless-hero-field input[type="text"],
 .headless-hero-field input[type="number"] {
-	min-height: 36px;
+	min-height: 40px;
+	margin: 0;
+}
+
+.headless-hero-field select,
+.headless-hero-field input[type="text"] {
+	width: 100%;
+	max-width: 100%;
+}
+
+#headless-hero-order {
+	width: 120px;
 }
 
 .headless-hero-field .description,
 .headless-hero-image-card .description {
 	margin: 0;
 	color: #646970;
+	line-height: 1.5;
+}
+
+.headless-hero-custom-position {
+	padding: 14px;
+	border: 1px dashed #c3c4c7;
+	border-radius: 7px;
+	background: #f9f9f9;
 }
 
 .headless-hero-list-thumb {
@@ -176,7 +235,7 @@
 	width: 80px;
 }
 
-@media screen and (max-width: 960px) {
+@media screen and (max-width: 1100px) {
 	.headless-hero-image-grid,
 	.headless-hero-form-grid {
 		grid-template-columns: 1fr;
@@ -184,5 +243,30 @@
 
 	.headless-hero-field--wide {
 		grid-column: auto;
+	}
+}
+
+@media screen and (max-width: 782px) {
+	#headless-hero-settings .inside {
+		padding: 14px;
+	}
+
+	.headless-hero-editor {
+		gap: 18px;
+	}
+
+	.headless-hero-section {
+		gap: 16px;
+		padding: 18px;
+	}
+
+	.headless-hero-image-card {
+		padding: 15px;
+	}
+
+	.headless-hero-image-preview,
+	.headless-hero-image-preview-image {
+		height: 180px;
+		min-height: 180px;
 	}
 }
