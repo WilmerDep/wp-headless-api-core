@@ -20,14 +20,16 @@ namespace HeadlessApiCore\Modules\Hero {
 	require_once dirname( __DIR__ ) . '/modules/Hero/Hero_Post_Type.php';
 
 	$href_cases = array(
-		'/servicios'                    => '/servicios',
-		'/servicios?x=1#top'            => '/servicios?x=1#top',
-		'https://example.org/servicios' => 'https://example.org/servicios',
-		'http://example.org/path'       => 'http://example.org/path',
-		'javascript:alert(1)'           => '',
-		'data:text/html,test'           => '',
-		'//evil.example/path'           => '',
-		"/safe\nheader"                => '',
+		'/servicios'                     => '/servicios',
+		'/servicios?x=1#top'             => '/servicios?x=1#top',
+		'https://example.org/servicios'  => 'https://example.org/servicios',
+		'http://example.org/path'        => 'http://example.org/path',
+		'/https://example.org/servicios' => 'https://example.org/servicios',
+		'/http://example.org/path'       => 'http://example.org/path',
+		'javascript:alert(1)'            => '',
+		'data:text/html,test'            => '',
+		'//evil.example/path'            => '',
+		"/safe\nheader"                 => '',
 	);
 
 	foreach ( $href_cases as $input => $expected ) {
