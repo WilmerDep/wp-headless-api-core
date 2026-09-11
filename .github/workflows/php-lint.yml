@@ -48,6 +48,15 @@ jobs:
       - name: Run News editorial lifecycle revalidation test
         run: php tests/news-revalidation-lifecycle.php
 
+      - name: Run Hero sanitization regression test
+        run: php tests/hero-sanitization.php
+
+      - name: Run Hero serializer regression test
+        run: php tests/hero-serializer.php
+
+      - name: Run Hero controller and freshness regression test
+        run: php tests/hero-controller.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash

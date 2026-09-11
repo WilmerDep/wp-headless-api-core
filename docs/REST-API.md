@@ -14,8 +14,6 @@ Public, read-only endpoint used to verify that the plugin is loaded and the v1 R
 
 Expected HTTP status: `200 OK`.
 
-Response contract:
-
 ```json
 {
   "ok": true,
@@ -24,15 +22,13 @@ Response contract:
 }
 ```
 
-No authentication is required for Health. The route still declares an explicit permission callback.
+No authentication is required. The route still declares an explicit permission callback.
 
 ---
 
-## News — v0.2.2 compatible public contract
+## News — v0.2.2 public contract
 
 News wraps the native WordPress `post` type. The Provider exposes published, non-password-protected posts only.
-
-v0.2.2 keeps the same public GET routes and response shapes validated in v0.2.1. The v0.2.2 change is the addition of a **signed outbound editorial revalidation channel** and Provider freshness hardening; it does not add a public mutation endpoint or expose Consumer internals through REST.
 
 ### `GET /wp-json/headless-core/v1/news`
 
@@ -47,9 +43,7 @@ Supported query parameters:
 | `order` | `desc` | `asc` or `desc` |
 | `orderby` | `date` | `date` or `modified` |
 
-`orderby=title` is intentionally not part of the contract. News consumers require stable chronological ordering, so ordering remains limited to publication and modification dates.
-
-Collection response:
+Collection shape:
 
 ```json
 {
@@ -90,7 +84,7 @@ Collection response:
 
 `featuredImage` is `null` when no featured image exists. `categories` is always an array.
 
-### Public visibility boundary
+### News public visibility boundary
 
 Collection queries are constrained to:
 
@@ -102,11 +96,9 @@ has_password = false
 
 Draft, pending, private, trash, future-before-publication and password-protected posts are not public News items.
 
-The realtime revalidation channel does not weaken or replace this rule; it only helps Consumers discard stale cache sooner after WordPress changes the source-of-truth state.
+### News Provider freshness/cache boundary
 
-### Provider freshness/cache boundary
-
-The Provider itself is an authoritative source and must not intentionally serve a stale editorial snapshot. News collection and detail queries therefore bypass persistent `WP_Query` result caching, and News REST responses apply:
+News collection and detail queries bypass persistent `WP_Query` result caching. News REST responses apply:
 
 ```text
 Cache-Control: no-store, no-cache, must-revalidate, max-age=0
@@ -114,23 +106,13 @@ Pragma: no-cache
 Expires: 0
 ```
 
-This policy applies to News success responses and News REST errors/404s. Consumer applications may still cache News according to their own documented strategy, including signed on-demand invalidation plus a short TTL fallback.
+Consumer applications may cache News according to their own documented strategy. Provider freshness and Consumer caching are separate concerns.
 
-If a hosting/CDN layer was caching News before this policy was deployed, purge that legacy cache once during rollout so subsequent origin responses can establish the new no-store policy.
+### News editorial date/time boundary
 
-### Editorial date/time boundary
+`publishedAt` and `modifiedAt` are ISO 8601 values using the WordPress site timezone. The Provider preserves the editorial wall-clock value and includes the site offset.
 
-`publishedAt` and `modifiedAt` are serialized as ISO 8601 using the timezone configured for the WordPress site. The Provider preserves the editorial wall-clock date/time and includes the site offset.
-
-For example, a post entered in a UTC-04:00 WordPress site as `09/09/2026 23:31` is exposed as:
-
-```text
-2026-09-09T23:31:00-04:00
-```
-
-WordPress query ordering remains source-of-truth ordering by native `post_date` / `post_modified` semantics selected through `orderby=date|modified`.
-
-### Public author boundary
+### News public author boundary
 
 News exposes only:
 
@@ -142,17 +124,7 @@ News exposes only:
 }
 ```
 
-`author.name` comes from the WordPress author's `display_name`.
-
-The contract intentionally does **not** expose email, login, username, roles, capabilities, credentials or additional user-account metadata.
-
-Full article HTML is intentionally omitted from the collection response to avoid over-fetching.
-
-### Source slug boundary
-
-`slug` is the native published WordPress `post_name`. Headless API Core does not silently rewrite source slugs.
-
-If legacy content contains undesirable slugs, correct the permalink in WordPress editorial data before the frontend treats that URL as canonical.
+The contract intentionally does not expose email, login, username, roles, capabilities, credentials or additional user-account metadata.
 
 ### `GET /wp-json/headless-core/v1/news/{slug}`
 
@@ -187,19 +159,15 @@ A successful response contains the same summary fields plus `content` and `seo`:
 }
 ```
 
-Unknown, unpublished or password-protected slugs return HTTP `404` with WordPress REST error code:
+Unknown, unpublished or password-protected slugs return HTTP `404` with code:
 
 ```text
 headless_core_news_not_found
 ```
 
-### SEO boundary
+### News SEO boundary
 
-The News detail endpoint exposes a small provider-owned SEO shape rather than leaking Yoast's raw contract to consumers.
-
-When Yoast SEO is available, Headless API Core may use its supported Surfaces API to obtain SEO title/description/Open Graph text. Native WordPress title/excerpt/image values are the fallback.
-
-The provider intentionally does **not** forward CMS canonical URLs, robots directives or Schema data in this first News contract. Those values may contain CMS-domain assumptions and require a configurable public-frontend URL strategy before they can be safely exposed.
+The detail endpoint exposes a provider-owned SEO shape rather than leaking a third-party SEO plugin contract. When Yoast SEO is available, Headless API Core may use its supported Surfaces API. Native WordPress values remain the fallback.
 
 Consumers must not call Yoast APIs directly as a contractual dependency of Headless API Core.
 
@@ -207,9 +175,9 @@ Consumers must not call Yoast APIs directly as a contractual dependency of Headl
 
 ## News outbound revalidation — v0.2.2
 
-This is **not** a public REST endpoint exposed by WordPress. It is an authenticated outbound request sent by the plugin to a configured Consumer endpoint after relevant News lifecycle changes.
+This is not a public WordPress REST endpoint. It is an authenticated outbound request sent to a configured Consumer after relevant News lifecycle changes.
 
-Expected Consumer endpoint example:
+Example target:
 
 ```text
 POST https://consumer.example.org/api/headless/revalidate
@@ -238,20 +206,146 @@ X-Headless-Signature: sha256=<hmac-sha256-hex>
 
 The signature covers `<timestamp>.<raw JSON body>` with the private shared `HEADLESS_REVALIDATION_SECRET`.
 
-The Consumer owns framework-specific cache invalidation. Headless API Core does not expose or depend on Next.js `revalidateTag()` / `revalidatePath()` internals.
+The Consumer owns framework-specific invalidation. Headless API Core does not depend on Next.js `revalidateTag()` or `revalidatePath()` internals.
 
-See `docs/REVALIDATION.md` for lifecycle events, signing verification, replay-window requirements, failure semantics and configuration.
+See `docs/REVALIDATION.md` for the detailed signing/lifecycle contract.
+
+---
+
+## Hero — v0.3.0 candidate
+
+Hero uses the dedicated editorial-only WordPress post type:
+
+```text
+headless_hero
+```
+
+The raw CPT is not exposed through native WordPress REST. Consumers depend on the Headless API Core contract only.
+
+### `GET /wp-json/headless-core/v1/hero`
+
+Public, read-only collection endpoint.
+
+Response shape:
+
+```json
+{
+  "items": [
+    {
+      "id": 123,
+      "image": {
+        "url": "https://cms.example.org/wp-content/uploads/hero-desktop.jpg",
+        "alt": "Accessible slide description",
+        "width": 1920,
+        "height": 760
+      },
+      "mobileImage": {
+        "url": "https://cms.example.org/wp-content/uploads/hero-mobile.jpg",
+        "alt": "Accessible slide description",
+        "width": 760,
+        "height": 960
+      },
+      "href": "/servicios",
+      "order": 1,
+      "objectPosition": "center center"
+    }
+  ]
+}
+```
+
+Rules:
+
+- `image` is required. Items without a valid featured image are excluded.
+- `mobileImage` is `null` when no valid mobile image exists.
+- `href` is `null` when no target is configured.
+- `objectPosition` is `null` when no override is configured.
+- the internal WordPress title is editorial-only and is not exposed.
+- an explicit Hero alt override takes precedence over attachment alt text.
+- without an explicit override, each image uses its own attachment alt text.
+
+### Hero public visibility boundary
+
+The Provider returns only:
+
+```text
+post_type = headless_hero
+post_status = publish
+has_password = false
+valid featured image = required
+```
+
+Draft, pending, private, future, trash and password-protected Hero items are not public.
+
+### Hero ordering
+
+Ordering is deterministic:
+
+```text
+menu_order ASC
+ID ASC
+```
+
+### Hero target URL boundary
+
+Accepted targets:
+
+- root-relative paths such as `/servicios`;
+- absolute `https://` URLs;
+- absolute `http://` URLs where intentionally configured.
+
+Protocol-relative URLs and unsafe schemes such as `javascript:` or `data:` are rejected.
+
+### Hero object-position boundary
+
+The optional value accepts one or two safe tokens composed of standard position keywords or percentages from 0 through 100. Arbitrary CSS expressions are rejected.
+
+Examples:
+
+```text
+center center
+center top
+50% 25%
+```
+
+### Hero Provider freshness/cache boundary
+
+Hero queries bypass persistent result caching and `/hero` applies:
+
+```text
+Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+Pragma: no-cache
+Expires: 0
+```
+
+The Provider therefore remains the fresh source of truth. Consumer caching/revalidation remains an integration responsibility.
+
+### Hero Consumer boundary
+
+The Provider does not expose or control:
+
+- autoplay duration;
+- transition animations;
+- arrows or dots;
+- pause behavior;
+- swipe thresholds;
+- frontend CSS/layout;
+- skeleton/loading UX.
+
+Those remain Consumer presentation concerns.
+
+See `docs/HERO-CONTRACT.md` for the complete Hero candidate contract and validation gate.
+
+---
 
 ## Planned, not implemented
 
-- `GET /headless-core/v1/hero`
 - `GET /headless-core/v1/services`
 - `GET /headless-core/v1/directory`
 - `GET /headless-core/v1/galleries`
 - `GET /headless-core/v1/settings`
 
-These routes remain deferred until News v0.2.2 lifecycle/revalidation is closed and promoted.
+These modules remain deferred until Hero v0.3.0 passes runtime validation.
 
 ## Breaking changes
 
-Do not silently remove fields, rename fields, change field meaning or alter response shapes used by consumers. Breaking changes must be documented and versioned, including coordinated updates in known consumer repositories.
+Do not silently remove fields, rename fields, change field meaning or alter response shapes used by Consumers. Breaking changes must be documented and versioned, including coordinated updates in known Consumer repositories.
