@@ -7,11 +7,14 @@
 
 namespace HeadlessApiCore\Modules\Hero;
 
+use HeadlessApiCore\Revalidation\Revalidation_Client;
+
 defined( 'ABSPATH' ) || exit;
 
 final class Hero_Module {
 	/**
-	 * Register Hero model, editorial controls and public REST surface.
+	 * Register Hero model, editorial controls, public REST surface and realtime
+	 * cache invalidation notifications.
 	 *
 	 * @return void
 	 */
@@ -25,5 +28,9 @@ final class Hero_Module {
 		$serializer = new Hero_Serializer();
 		$controller = new Hero_Controller( $serializer );
 		$controller->register();
+
+		$revalidation_client = new Revalidation_Client();
+		$revalidation        = new Hero_Revalidation( $revalidation_client );
+		$revalidation->register();
 	}
 }
