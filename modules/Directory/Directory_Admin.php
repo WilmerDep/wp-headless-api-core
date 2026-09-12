@@ -96,18 +96,20 @@ final class Directory_Admin {
 	public function render_meta_box( $post ) {
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_NAME );
 
-		$portrait_id = (int) get_post_thumbnail_id( $post );
-		$role        = (string) get_post_meta( $post->ID, Directory_Post_Type::META_ROLE, true );
-		$joined_at   = (string) get_post_meta( $post->ID, Directory_Post_Type::META_JOINED_AT, true );
-		$phone       = (string) get_post_meta( $post->ID, Directory_Post_Type::META_PHONE, true );
-		$email       = (string) get_post_meta( $post->ID, Directory_Post_Type::META_EMAIL, true );
-		$summary     = (string) get_post_meta( $post->ID, Directory_Post_Type::META_SUMMARY, true );
-		$alt         = (string) get_post_meta( $post->ID, Directory_Post_Type::META_ALT, true );
-		$external_id = (string) get_post_meta( $post->ID, Directory_Post_Type::META_EXTERNAL_ID, true );
-		$selected    = wp_get_post_terms( $post->ID, Directory_Post_Type::TAXONOMY, array( 'fields' => 'ids' ) );
-		$selected    = is_wp_error( $selected ) ? array() : array_map( 'intval', $selected );
-		$groups      = get_terms( array( 'taxonomy' => Directory_Post_Type::TAXONOMY, 'hide_empty' => false ) );
-		$groups      = is_wp_error( $groups ) ? array() : $groups;
+		$portrait_id      = (int) get_post_thumbnail_id( $post );
+		$role             = (string) get_post_meta( $post->ID, Directory_Post_Type::META_ROLE, true );
+		$joined_at        = (string) get_post_meta( $post->ID, Directory_Post_Type::META_JOINED_AT, true );
+		$police_joined_at = (string) get_post_meta( $post->ID, Directory_Post_Type::META_POLICE_JOINED_AT, true );
+		$recognition      = (string) get_post_meta( $post->ID, Directory_Post_Type::META_RECOGNITION, true );
+		$phone            = (string) get_post_meta( $post->ID, Directory_Post_Type::META_PHONE, true );
+		$email            = (string) get_post_meta( $post->ID, Directory_Post_Type::META_EMAIL, true );
+		$summary          = (string) get_post_meta( $post->ID, Directory_Post_Type::META_SUMMARY, true );
+		$alt              = (string) get_post_meta( $post->ID, Directory_Post_Type::META_ALT, true );
+		$external_id      = (string) get_post_meta( $post->ID, Directory_Post_Type::META_EXTERNAL_ID, true );
+		$selected         = wp_get_post_terms( $post->ID, Directory_Post_Type::TAXONOMY, array( 'fields' => 'ids' ) );
+		$selected         = is_wp_error( $selected ) ? array() : array_map( 'intval', $selected );
+		$groups           = get_terms( array( 'taxonomy' => Directory_Post_Type::TAXONOMY, 'hide_empty' => false ) );
+		$groups           = is_wp_error( $groups ) ? array() : $groups;
 		?>
 		<div class="headless-directory-editor">
 			<div class="headless-directory-intro">
@@ -125,19 +127,32 @@ final class Directory_Admin {
 				</section>
 
 				<section class="headless-directory-section">
-					<div class="headless-directory-section-heading"><div><h3><?php esc_html_e( 'Información profesional', 'wp-headless-api-core' ); ?></h3><p><?php esc_html_e( 'Cargo, fecha y breve presentación pública.', 'wp-headless-api-core' ); ?></p></div></div>
+					<div class="headless-directory-section-heading"><div><h3><?php esc_html_e( 'Información profesional', 'wp-headless-api-core' ); ?></h3><p><?php esc_html_e( 'Cargo, fecha y presentación pública.', 'wp-headless-api-core' ); ?></p></div></div>
 					<div class="headless-directory-field">
 						<label for="headless-directory-role"><?php esc_html_e( 'Cargo o función', 'wp-headless-api-core' ); ?></label>
 						<input id="headless-directory-role" class="widefat" type="text" name="headless_directory_role" value="<?php echo esc_attr( $role ); ?>" placeholder="<?php esc_attr_e( 'Ej.: Directora Ejecutiva', 'wp-headless-api-core' ); ?>" />
 					</div>
 					<div class="headless-directory-field">
-						<label for="headless-directory-joined-at"><?php esc_html_e( 'Fecha de ingreso', 'wp-headless-api-core' ); ?></label>
+						<label for="headless-directory-joined-at"><?php esc_html_e( 'Fecha de ingreso / designación', 'wp-headless-api-core' ); ?></label>
 						<input id="headless-directory-joined-at" type="date" name="headless_directory_joined_at" value="<?php echo esc_attr( $joined_at ); ?>" />
-						<p class="description"><?php esc_html_e( 'Opcional. Se guarda como fecha, no como texto libre.', 'wp-headless-api-core' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Opcional. En Despacho representa la fecha de designación en el cargo.', 'wp-headless-api-core' ); ?></p>
 					</div>
 					<div class="headless-directory-field">
 						<label for="headless-directory-summary"><?php esc_html_e( 'Resumen', 'wp-headless-api-core' ); ?></label>
-						<textarea id="headless-directory-summary" class="widefat" rows="4" name="headless_directory_summary" placeholder="<?php esc_attr_e( 'Breve descripción pública de la persona.', 'wp-headless-api-core' ); ?>"><?php echo esc_textarea( $summary ); ?></textarea>
+						<textarea id="headless-directory-summary" class="widefat" rows="8" name="headless_directory_summary" placeholder="<?php esc_attr_e( 'Biografía o descripción pública de la persona.', 'wp-headless-api-core' ); ?>"><?php echo esc_textarea( $summary ); ?></textarea>
+						<p class="description"><?php esc_html_e( 'Puedes separar párrafos dejando una línea en blanco. Se guarda como texto plano seguro.', 'wp-headless-api-core' ); ?></p>
+					</div>
+				</section>
+
+				<section class="headless-directory-section">
+					<div class="headless-directory-section-heading"><div><h3><?php esc_html_e( 'Datos institucionales del despacho', 'wp-headless-api-core' ); ?></h3><p><?php esc_html_e( 'Datos institucionales opcionales reutilizables por cualquier perfil.', 'wp-headless-api-core' ); ?></p></div><span class="headless-directory-badge is-optional"><?php esc_html_e( 'Opcional', 'wp-headless-api-core' ); ?></span></div>
+					<div class="headless-directory-field">
+						<label for="headless-directory-police-joined-at"><?php esc_html_e( 'Ingreso a la Policía Nacional', 'wp-headless-api-core' ); ?></label>
+						<input id="headless-directory-police-joined-at" class="widefat" type="text" name="headless_directory_police_joined_at" value="<?php echo esc_attr( $police_joined_at ); ?>" placeholder="<?php esc_attr_e( 'Ej.: 1995', 'wp-headless-api-core' ); ?>" />
+					</div>
+					<div class="headless-directory-field">
+						<label for="headless-directory-recognition"><?php esc_html_e( 'Reconocimiento', 'wp-headless-api-core' ); ?></label>
+						<input id="headless-directory-recognition" class="widefat" type="text" name="headless_directory_recognition" value="<?php echo esc_attr( $recognition ); ?>" placeholder="<?php esc_attr_e( 'Ej.: Mérito Policial · 2025', 'wp-headless-api-core' ); ?>" />
 					</div>
 				</section>
 
@@ -252,13 +267,15 @@ final class Directory_Admin {
 		}
 
 		$fields = array(
-			Directory_Post_Type::META_ROLE        => isset( $_POST['headless_directory_role'] ) ? sanitize_text_field( wp_unslash( $_POST['headless_directory_role'] ) ) : '',
-			Directory_Post_Type::META_JOINED_AT   => isset( $_POST['headless_directory_joined_at'] ) ? Directory_Post_Type::sanitize_date( wp_unslash( $_POST['headless_directory_joined_at'] ) ) : '',
-			Directory_Post_Type::META_PHONE       => isset( $_POST['headless_directory_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['headless_directory_phone'] ) ) : '',
-			Directory_Post_Type::META_EMAIL       => isset( $_POST['headless_directory_email'] ) ? Directory_Post_Type::sanitize_email_value( wp_unslash( $_POST['headless_directory_email'] ) ) : '',
-			Directory_Post_Type::META_SUMMARY     => isset( $_POST['headless_directory_summary'] ) ? sanitize_textarea_field( wp_unslash( $_POST['headless_directory_summary'] ) ) : '',
-			Directory_Post_Type::META_ALT         => isset( $_POST['headless_directory_alt'] ) ? sanitize_text_field( wp_unslash( $_POST['headless_directory_alt'] ) ) : '',
-			Directory_Post_Type::META_EXTERNAL_ID => isset( $_POST['headless_directory_external_id'] ) ? Directory_Post_Type::sanitize_external_id( wp_unslash( $_POST['headless_directory_external_id'] ) ) : '',
+			Directory_Post_Type::META_ROLE             => isset( $_POST['headless_directory_role'] ) ? sanitize_text_field( wp_unslash( $_POST['headless_directory_role'] ) ) : '',
+			Directory_Post_Type::META_JOINED_AT        => isset( $_POST['headless_directory_joined_at'] ) ? Directory_Post_Type::sanitize_date( wp_unslash( $_POST['headless_directory_joined_at'] ) ) : '',
+			Directory_Post_Type::META_POLICE_JOINED_AT => isset( $_POST['headless_directory_police_joined_at'] ) ? sanitize_text_field( wp_unslash( $_POST['headless_directory_police_joined_at'] ) ) : '',
+			Directory_Post_Type::META_RECOGNITION      => isset( $_POST['headless_directory_recognition'] ) ? sanitize_text_field( wp_unslash( $_POST['headless_directory_recognition'] ) ) : '',
+			Directory_Post_Type::META_PHONE            => isset( $_POST['headless_directory_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['headless_directory_phone'] ) ) : '',
+			Directory_Post_Type::META_EMAIL            => isset( $_POST['headless_directory_email'] ) ? Directory_Post_Type::sanitize_email_value( wp_unslash( $_POST['headless_directory_email'] ) ) : '',
+			Directory_Post_Type::META_SUMMARY          => isset( $_POST['headless_directory_summary'] ) ? sanitize_textarea_field( wp_unslash( $_POST['headless_directory_summary'] ) ) : '',
+			Directory_Post_Type::META_ALT              => isset( $_POST['headless_directory_alt'] ) ? sanitize_text_field( wp_unslash( $_POST['headless_directory_alt'] ) ) : '',
+			Directory_Post_Type::META_EXTERNAL_ID      => isset( $_POST['headless_directory_external_id'] ) ? Directory_Post_Type::sanitize_external_id( wp_unslash( $_POST['headless_directory_external_id'] ) ) : '',
 		);
 		foreach ( $fields as $key => $value ) {
 			'' === $value ? delete_post_meta( $post_id, $key ) : update_post_meta( $post_id, $key, $value );
@@ -325,12 +342,6 @@ final class Directory_Admin {
 		);
 	}
 
-	/**
-	 * Add group filter to people list.
-	 *
-	 * @param string $post_type Current post type.
-	 * @return void
-	 */
 	public function group_filter( $post_type ) {
 		if ( Directory_Post_Type::POST_TYPE !== $post_type ) {
 			return;
@@ -339,12 +350,6 @@ final class Directory_Admin {
 		wp_dropdown_categories( array( 'show_option_all' => __( 'Todos los grupos', 'wp-headless-api-core' ), 'taxonomy' => Directory_Post_Type::TAXONOMY, 'name' => 'directory_group', 'orderby' => 'name', 'selected' => $selected, 'hierarchical' => true, 'hide_empty' => false, 'value_field' => 'term_id' ) );
 	}
 
-	/**
-	 * Apply list group filter.
-	 *
-	 * @param WP_Query $query Admin query.
-	 * @return void
-	 */
 	public function apply_group_filter( $query ) {
 		if ( ! is_admin() || ! $query->is_main_query() || Directory_Post_Type::POST_TYPE !== $query->get( 'post_type' ) ) {
 			return;
@@ -355,31 +360,18 @@ final class Directory_Admin {
 		}
 	}
 
-	/**
-	 * Customize people list columns.
-	 *
-	 * @param array $columns Existing columns.
-	 * @return array
-	 */
 	public function list_columns( $columns ) {
 		return array(
-			'cb'                => isset( $columns['cb'] ) ? $columns['cb'] : '<input type="checkbox" />',
-			'directory_portrait'=> __( 'Foto', 'wp-headless-api-core' ),
-			'title'             => __( 'Nombre', 'wp-headless-api-core' ),
-			'directory_role'    => __( 'Cargo', 'wp-headless-api-core' ),
-			'directory_groups'  => __( 'Grupos', 'wp-headless-api-core' ),
-			'directory_order'   => __( 'Orden', 'wp-headless-api-core' ),
-			'date'              => isset( $columns['date'] ) ? $columns['date'] : __( 'Fecha', 'wp-headless-api-core' ),
+			'cb'                 => isset( $columns['cb'] ) ? $columns['cb'] : '<input type="checkbox" />',
+			'directory_portrait' => __( 'Foto', 'wp-headless-api-core' ),
+			'title'              => __( 'Nombre', 'wp-headless-api-core' ),
+			'directory_role'     => __( 'Cargo', 'wp-headless-api-core' ),
+			'directory_groups'   => __( 'Grupos', 'wp-headless-api-core' ),
+			'directory_order'    => __( 'Orden', 'wp-headless-api-core' ),
+			'date'               => isset( $columns['date'] ) ? $columns['date'] : __( 'Fecha', 'wp-headless-api-core' ),
 		);
 	}
 
-	/**
-	 * Render custom list columns.
-	 *
-	 * @param string $column  Column name.
-	 * @param int    $post_id Post ID.
-	 * @return void
-	 */
 	public function render_list_column( $column, $post_id ) {
 		if ( 'directory_portrait' === $column ) {
 			$image = get_the_post_thumbnail( $post_id, array( 72, 88 ), array( 'class' => 'headless-directory-list-thumb' ) );
@@ -400,11 +392,6 @@ final class Directory_Admin {
 		}
 	}
 
-	/**
-	 * Render drag-and-drop ordering workspace.
-	 *
-	 * @return void
-	 */
 	public function render_order_page() {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_die( esc_html__( 'No tienes permisos para ordenar el directorio.', 'wp-headless-api-core' ) );
@@ -426,13 +413,6 @@ final class Directory_Admin {
 		<?php
 	}
 
-	/**
-	 * Render person ordering list.
-	 *
-	 * @param int    $group_id Active group.
-	 * @param string $base     Base URL.
-	 * @return void
-	 */
 	private function render_person_order_list( $group_id, $base ) {
 		$groups = get_terms( array( 'taxonomy' => Directory_Post_Type::TAXONOMY, 'hide_empty' => false ) );
 		$groups = is_wp_error( $groups ) ? array() : $groups;
@@ -475,11 +455,6 @@ final class Directory_Admin {
 		<?php
 	}
 
-	/**
-	 * Render draggable group ordering list.
-	 *
-	 * @return void
-	 */
 	private function render_group_order_list() {
 		$terms = get_terms( array( 'taxonomy' => Directory_Post_Type::TAXONOMY, 'hide_empty' => false ) );
 		$terms = is_wp_error( $terms ) ? array() : $terms;
@@ -496,11 +471,6 @@ final class Directory_Admin {
 		<?php
 	}
 
-	/**
-	 * Render spreadsheet import workspace.
-	 *
-	 * @return void
-	 */
 	public function render_import_page() {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_die( esc_html__( 'No tienes permisos para importar personas.', 'wp-headless-api-core' ) );
