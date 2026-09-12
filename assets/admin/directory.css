@@ -165,6 +165,17 @@
 	border-color: #c3c4c7;
 }
 
+/* The empty state is a true placeholder: it must never coexist visually with
+ * an already selected portrait. The class-based fallback also covers themes or
+ * admin CSS that interfere with the HTML hidden attribute. */
+.headless-directory-image-preview.has-image .headless-directory-image-empty {
+	display: none !important;
+}
+
+.headless-directory-image-preview:not(.has-image) .headless-directory-image-preview-image {
+	display: none !important;
+}
+
 .headless-directory-image-preview-image {
 	display: block;
 	width: 100%;
