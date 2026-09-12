@@ -20,7 +20,10 @@ namespace {
 	}
 
 	function sanitize_text_field( $value ) { return trim( strip_tags( (string) $value ) ); }
-	function sanitize_textarea_field( $value ) { return trim( strip_tags( (string) $value ) ); }
+	function sanitize_textarea_field( $value ) {
+		$value = str_replace( array( "\r\n", "\r" ), "\n", strip_tags( (string) $value ) );
+		return trim( $value );
+	}
 	function sanitize_email( $value ) { return filter_var( trim( (string) $value ), FILTER_SANITIZE_EMAIL ); }
 	function is_email( $value ) { return false !== filter_var( $value, FILTER_VALIDATE_EMAIL ); }
 	function sanitize_title( $value ) { return strtolower( preg_replace( '/[^a-z0-9-]+/i', '-', trim( (string) $value ) ) ); }
@@ -56,13 +59,16 @@ namespace HeadlessApiCore\Modules\Directory {
 	$GLOBALS['directory_test_images'][55] = array( 'https://cms.example.org/person.jpg', 900, 1200 );
 	$GLOBALS['directory_test_meta'][55]['_wp_attachment_image_alt'] = 'Alt de Medios';
 	$GLOBALS['directory_test_meta'][10] = array(
-		Directory_Post_Type::META_ROLE        => 'Directora Ejecutiva',
-		Directory_Post_Type::META_JOINED_AT   => '2026-09-11',
-		Directory_Post_Type::META_PHONE       => '(809) 555-0000',
-		Directory_Post_Type::META_EMAIL       => 'persona@example.org',
-		Directory_Post_Type::META_SUMMARY     => 'Resumen público',
-		Directory_Post_Type::META_ALT         => 'Retrato institucional',
-		Directory_Post_Type::META_GROUP_ORDER => array( '12' => 1 ),
+		Directory_Post_Type::META_ROLE             => 'Directora Ejecutiva',
+		Directory_Post_Type::META_JOINED_AT        => '2026-09-11',
+		Directory_Post_Type::META_POLICE_JOINED_AT => '1995',
+		Directory_Post_Type::META_RECOGNITION      => 'Mérito Policial · 2025',
+		Directory_Post_Type::META_PHONE            => '(809) 555-0000',
+		Directory_Post_Type::META_EMAIL            => 'persona@example.org',
+		Directory_Post_Type::META_SUMMARY          => "Primer párrafo.\n\nSegundo párrafo.",
+		Directory_Post_Type::META_ALT              => 'Retrato institucional',
+		Directory_Post_Type::META_GROUP_ORDER      => array( '12' => 1 ),
+		Directory_Post_Type::META_EXTERNAL_ID      => 'PRIVATE-001',
 	);
 	$GLOBALS['directory_test_terms'][10] = array(
 		new \WP_Term( 12, 'directores', 'Directores' ),
@@ -85,6 +91,22 @@ namespace HeadlessApiCore\Modules\Directory {
 	}
 	if ( 'persona@example.org' !== $item['email'] || '2026-09-11' !== $item['joinedAt'] ) {
 		fwrite( STDERR, "Directory serializer failed public contact/date fields.\n" ); exit( 1 );
+	}
+	if ( '1995' !== $item['policeJoinedAt'] || 'Mérito Policial · 2025' !== $item['recognition'] ) {
+		fwrite( STDERR, "Directory serializer failed institutional profile fields.\n" ); exit( 1 );
+	}
+	if ( "Primer párrafo.\n\nSegundo párrafo." !== $item['summary'] ) {
+		fwrite( STDERR, "Directory serializer did not preserve summary paragraph breaks.\n" ); exit( 1 );
+	}
+	if ( array_key_exists( 'external_id', $item ) || array_key_exists( 'externalId', $item ) ) {
+		fwrite( STDERR, "Directory serializer exposed private external_id.\n" ); exit( 1 );
+	}
+
+	unset( $GLOBALS['directory_test_meta'][10][ Directory_Post_Type::META_POLICE_JOINED_AT ] );
+	unset( $GLOBALS['directory_test_meta'][10][ Directory_Post_Type::META_RECOGNITION ] );
+	$item = $serializer->item( $post );
+	if ( null !== $item['policeJoinedAt'] || null !== $item['recognition'] ) {
+		fwrite( STDERR, "Directory serializer failed null semantics for optional institutional fields.\n" ); exit( 1 );
 	}
 
 	$GLOBALS['directory_test_thumbnails'][10] = 0;
