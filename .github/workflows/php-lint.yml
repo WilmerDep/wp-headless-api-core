@@ -63,6 +63,12 @@ jobs:
       - name: Run Hero editorial lifecycle revalidation test
         run: php tests/hero-revalidation-lifecycle.php
 
+      - name: Run Directory sanitization regression test
+        run: php tests/directory-sanitization.php
+
+      - name: Run Directory lifecycle hook registration test
+        run: php tests/directory-revalidation-hooks.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
