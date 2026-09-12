@@ -72,6 +72,9 @@ jobs:
       - name: Run Directory lifecycle hook registration test
         run: php tests/directory-revalidation-hooks.php
 
+      - name: Run Directory editorial lifecycle revalidation test
+        run: php tests/directory-revalidation-lifecycle.php
+
       - name: Run Directory CSV import mode regression test
         run: php tests/directory-csv-mode.php
 
