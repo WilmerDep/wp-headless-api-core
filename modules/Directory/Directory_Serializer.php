@@ -31,23 +31,27 @@ final class Directory_Serializer {
 			return null;
 		}
 
-		$role      = sanitize_text_field( (string) get_post_meta( $post->ID, Directory_Post_Type::META_ROLE, true ) );
-		$joined_at = Directory_Post_Type::sanitize_date( get_post_meta( $post->ID, Directory_Post_Type::META_JOINED_AT, true ) );
-		$phone     = sanitize_text_field( (string) get_post_meta( $post->ID, Directory_Post_Type::META_PHONE, true ) );
-		$email     = Directory_Post_Type::sanitize_email_value( get_post_meta( $post->ID, Directory_Post_Type::META_EMAIL, true ) );
-		$summary   = sanitize_textarea_field( (string) get_post_meta( $post->ID, Directory_Post_Type::META_SUMMARY, true ) );
+		$role             = sanitize_text_field( (string) get_post_meta( $post->ID, Directory_Post_Type::META_ROLE, true ) );
+		$joined_at        = Directory_Post_Type::sanitize_date( get_post_meta( $post->ID, Directory_Post_Type::META_JOINED_AT, true ) );
+		$police_joined_at = sanitize_text_field( (string) get_post_meta( $post->ID, Directory_Post_Type::META_POLICE_JOINED_AT, true ) );
+		$recognition      = sanitize_text_field( (string) get_post_meta( $post->ID, Directory_Post_Type::META_RECOGNITION, true ) );
+		$phone            = sanitize_text_field( (string) get_post_meta( $post->ID, Directory_Post_Type::META_PHONE, true ) );
+		$email            = Directory_Post_Type::sanitize_email_value( get_post_meta( $post->ID, Directory_Post_Type::META_EMAIL, true ) );
+		$summary          = sanitize_textarea_field( (string) get_post_meta( $post->ID, Directory_Post_Type::META_SUMMARY, true ) );
 
 		return array(
-			'id'       => (int) $post->ID,
-			'name'     => sanitize_text_field( get_the_title( $post ) ),
-			'role'     => '' !== $role ? $role : null,
-			'joinedAt' => '' !== $joined_at ? $joined_at : null,
-			'image'    => $image,
-			'phone'    => '' !== $phone ? $phone : null,
-			'email'    => '' !== $email ? $email : null,
-			'summary'  => '' !== $summary ? $summary : null,
-			'order'    => $this->effective_order( $post, (int) $group_id ),
-			'groups'   => $this->groups( (int) $post->ID ),
+			'id'             => (int) $post->ID,
+			'name'           => sanitize_text_field( get_the_title( $post ) ),
+			'role'           => '' !== $role ? $role : null,
+			'joinedAt'       => '' !== $joined_at ? $joined_at : null,
+			'policeJoinedAt' => '' !== $police_joined_at ? $police_joined_at : null,
+			'recognition'    => '' !== $recognition ? $recognition : null,
+			'image'          => $image,
+			'phone'          => '' !== $phone ? $phone : null,
+			'email'          => '' !== $email ? $email : null,
+			'summary'        => '' !== $summary ? $summary : null,
+			'order'          => $this->effective_order( $post, (int) $group_id ),
+			'groups'         => $this->groups( (int) $post->ID ),
 		);
 	}
 
