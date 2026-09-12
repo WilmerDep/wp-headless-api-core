@@ -30,6 +30,9 @@ final class Directory_Module {
 		$importer = new Directory_Importer();
 		$importer->register();
 
+		$import_batch = new Directory_Import_Batch();
+		$import_batch->register();
+
 		$csv_mode = new Directory_Csv_Mode();
 		$csv_mode->register();
 
