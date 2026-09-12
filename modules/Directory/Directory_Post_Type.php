@@ -20,28 +20,21 @@ final class Directory_Post_Type {
 	const META_PHONE            = '_headless_directory_phone';
 	const META_EMAIL            = '_headless_directory_email';
 	const META_SUMMARY          = '_headless_directory_summary';
+	const META_SUMMARY_HTML     = '_headless_directory_summary_html';
 	const META_ALT              = '_headless_directory_alt';
 	const META_EXTERNAL_ID      = '_headless_directory_external_id';
 	const META_GROUP_ORDER      = '_headless_directory_group_order';
 
 	const TERM_META_ORDER = '_headless_directory_order';
 
-	/**
-	 * Register model hooks.
-	 *
-	 * @return void
-	 */
+	/** Register model hooks. */
 	public function register() {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_taxonomy' ), 5 );
 		add_action( 'init', array( $this, 'register_meta' ), 20 );
 	}
 
-	/**
-	 * Register the editorial-only person CPT.
-	 *
-	 * @return void
-	 */
+	/** Register the editorial-only person CPT. */
 	public function register_post_type() {
 		register_post_type(
 			self::POST_TYPE,
@@ -77,11 +70,7 @@ final class Directory_Post_Type {
 		);
 	}
 
-	/**
-	 * Register reusable Directory groups.
-	 *
-	 * @return void
-	 */
+	/** Register reusable Directory groups. */
 	public function register_taxonomy() {
 		register_taxonomy(
 			self::TAXONOMY,
@@ -102,17 +91,13 @@ final class Directory_Post_Type {
 				'show_in_rest'       => false,
 				'hierarchical'       => true,
 				'rewrite'            => false,
-				'query_var'          => false,
+				'query_var'           => false,
 				'meta_box_cb'        => false,
 			)
 		);
 	}
 
-	/**
-	 * Register person and group metadata without exposing raw meta in WP REST.
-	 *
-	 * @return void
-	 */
+	/** Register person and group metadata without exposing raw meta in WP REST. */
 	public function register_meta() {
 		$this->register_string_meta( self::META_ROLE, 'sanitize_text_field' );
 		$this->register_string_meta( self::META_JOINED_AT, array( __CLASS__, 'sanitize_date' ) );
@@ -121,6 +106,7 @@ final class Directory_Post_Type {
 		$this->register_string_meta( self::META_PHONE, 'sanitize_text_field' );
 		$this->register_string_meta( self::META_EMAIL, array( __CLASS__, 'sanitize_email_value' ) );
 		$this->register_string_meta( self::META_SUMMARY, 'sanitize_textarea_field' );
+		$this->register_string_meta( self::META_SUMMARY_HTML, array( __CLASS__, 'sanitize_summary_html' ) );
 		$this->register_string_meta( self::META_ALT, 'sanitize_text_field' );
 		$this->register_string_meta( self::META_EXTERNAL_ID, array( __CLASS__, 'sanitize_external_id' ) );
 
@@ -151,13 +137,7 @@ final class Directory_Post_Type {
 		);
 	}
 
-	/**
-	 * Register one private string meta field.
-	 *
-	 * @param string          $key      Meta key.
-	 * @param callable|string $sanitize Sanitizer.
-	 * @return void
-	 */
+	/** Register one private string meta field. */
 	private function register_string_meta( $key, $sanitize ) {
 		register_post_meta(
 			self::POST_TYPE,
@@ -173,81 +153,62 @@ final class Directory_Post_Type {
 		);
 	}
 
-	/**
-	 * Restrict person meta mutation to users who can edit the owning post.
-	 *
-	 * @param bool   $allowed Existing authorization decision.
-	 * @param string $meta_key Meta key.
-	 * @param int    $post_id  Post ID.
-	 * @return bool
-	 */
 	public function can_edit_meta( $allowed, $meta_key, $post_id ) {
 		unset( $allowed, $meta_key );
 		return current_user_can( 'edit_post', (int) $post_id );
 	}
 
-	/**
-	 * Restrict group ordering metadata to users who can manage categories.
-	 *
-	 * @return bool
-	 */
 	public function can_manage_terms() {
 		return current_user_can( 'manage_categories' );
 	}
 
-	/**
-	 * Strict YYYY-MM-DD sanitizer.
-	 *
-	 * @param mixed $value Raw value.
-	 * @return string
-	 */
+	/** Strict YYYY-MM-DD sanitizer. */
 	public static function sanitize_date( $value ) {
 		$value = trim( (string) $value );
 		if ( '' === $value ) {
 			return '';
 		}
-
 		if ( ! preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches ) ) {
 			return '';
 		}
-
 		return checkdate( (int) $matches[2], (int) $matches[3], (int) $matches[1] ) ? $value : '';
 	}
 
-	/**
-	 * Sanitize a public email, returning empty when invalid.
-	 *
-	 * @param mixed $value Raw value.
-	 * @return string
-	 */
+	/** Sanitize a public email, returning empty when invalid. */
 	public static function sanitize_email_value( $value ) {
 		$email = sanitize_email( (string) $value );
 		return is_email( $email ) ? $email : '';
 	}
 
-	/**
-	 * Normalize a private import identity key.
-	 *
-	 * @param mixed $value Raw value.
-	 * @return string
-	 */
+	/** Explicit HTML whitelist for the enriched biography field. */
+	public static function summary_html_allowed_tags() {
+		return array(
+			'p'      => array(),
+			'strong' => array(),
+			'b'      => array(),
+			'em'     => array(),
+			'i'      => array(),
+			'br'     => array(),
+		);
+	}
+
+	/** Sanitize enriched biography HTML without allowing attributes or active content. */
+	public static function sanitize_summary_html( $value ) {
+		return trim( wp_kses( (string) $value, self::summary_html_allowed_tags() ) );
+	}
+
+	/** Normalize a private import identity key. */
 	public static function sanitize_external_id( $value ) {
 		$value = trim( sanitize_text_field( (string) $value ) );
 		$value = preg_replace( '/[^A-Za-z0-9._:-]/', '', $value );
 		return substr( (string) $value, 0, 100 );
 	}
 
-	/**
-	 * Sanitize per-group ordering metadata.
-	 *
-	 * @param mixed $value Raw map.
-	 * @return array
-	 */
+	/** Sanitize per-group ordering metadata. */
 	public static function sanitize_group_order_map( $value ) {
 		if ( ! is_array( $value ) ) {
 			return array();
 		}
-
 		$clean = array();
 		foreach ( $value as $term_id => $position ) {
 			$term_id = absint( $term_id );
@@ -256,7 +217,6 @@ final class Directory_Post_Type {
 			}
 			$clean[ (string) $term_id ] = max( 0, (int) $position );
 		}
-
 		return $clean;
 	}
 }
