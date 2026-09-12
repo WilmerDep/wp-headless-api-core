@@ -89,6 +89,18 @@ namespace HeadlessApiCore\Modules\Directory {
 		exit( 1 );
 	}
 
+	$encoded = '&lt;p&gt;Hola &lt;strong&gt;Director&lt;/strong&gt;&lt;/p&gt;';
+	$decoded_clean = Directory_Post_Type::sanitize_summary_html( $encoded );
+	if ( '<p>Hola <strong>Director</strong></p>' !== $decoded_clean ) {
+		fwrite( STDERR, "Directory rich summary sanitizer did not normalize encoded markup: {$decoded_clean}\n" );
+		exit( 1 );
+	}
+
+	if ( false !== strpos( $decoded_clean, '&lt;p&gt;' ) || false !== strpos( $decoded_clean, '&lt;strong&gt;' ) ) {
+		fwrite( STDERR, "Directory rich summary sanitizer returned encoded tags.\n" );
+		exit( 1 );
+	}
+
 	if ( false !== strpos( $clean, 'class=' ) || false !== strpos( $clean, '<script' ) || false !== strpos( $clean, '<a' ) ) {
 		fwrite( STDERR, "Directory rich summary sanitizer retained forbidden markup.\n" );
 		exit( 1 );
