@@ -30,6 +30,24 @@ namespace {
 	function esc_url_raw( $value ) { return (string) $value; }
 	function absint( $value ) { return abs( (int) $value ); }
 	function is_wp_error( $value ) { return false; }
+	function wp_kses( $value, $allowed_html ) {
+		$allowed = '';
+		foreach ( array_keys( $allowed_html ) as $tag ) {
+			$allowed .= '<' . $tag . '>';
+		}
+		$value = strip_tags( (string) $value, $allowed );
+		return preg_replace_callback(
+			'/<\/?([a-z0-9]+)(?:\s[^>]*)?>/i',
+			static function ( $matches ) use ( $allowed_html ) {
+				$tag = strtolower( $matches[1] );
+				if ( ! isset( $allowed_html[ $tag ] ) ) {
+					return '';
+				}
+				return 0 === strpos( $matches[0], '</' ) ? '</' . $tag . '>' : '<' . $tag . '>';
+			},
+			$value
+		);
+	}
 
 	$GLOBALS['directory_test_meta'] = array();
 	$GLOBALS['directory_test_terms'] = array();
@@ -66,6 +84,7 @@ namespace HeadlessApiCore\Modules\Directory {
 		Directory_Post_Type::META_PHONE            => '(809) 555-0000',
 		Directory_Post_Type::META_EMAIL            => 'persona@example.org',
 		Directory_Post_Type::META_SUMMARY          => "Primer párrafo.\n\nSegundo párrafo.",
+		Directory_Post_Type::META_SUMMARY_HTML     => '<p>Primer <strong>párrafo</strong>.</p><p>Segundo <em>párrafo</em>.<script>x</script></p>',
 		Directory_Post_Type::META_ALT              => 'Retrato institucional',
 		Directory_Post_Type::META_GROUP_ORDER      => array( '12' => 1 ),
 		Directory_Post_Type::META_EXTERNAL_ID      => 'PRIVATE-001',
@@ -98,15 +117,19 @@ namespace HeadlessApiCore\Modules\Directory {
 	if ( "Primer párrafo.\n\nSegundo párrafo." !== $item['summary'] ) {
 		fwrite( STDERR, "Directory serializer did not preserve summary paragraph breaks.\n" ); exit( 1 );
 	}
+	if ( '<p>Primer <strong>párrafo</strong>.</p><p>Segundo <em>párrafo</em>.x</p>' !== $item['summaryHtml'] ) {
+		fwrite( STDERR, "Directory serializer failed safe summaryHtml output.\n" ); exit( 1 );
+	}
 	if ( array_key_exists( 'external_id', $item ) || array_key_exists( 'externalId', $item ) ) {
 		fwrite( STDERR, "Directory serializer exposed private external_id.\n" ); exit( 1 );
 	}
 
 	unset( $GLOBALS['directory_test_meta'][10][ Directory_Post_Type::META_POLICE_JOINED_AT ] );
 	unset( $GLOBALS['directory_test_meta'][10][ Directory_Post_Type::META_RECOGNITION ] );
+	unset( $GLOBALS['directory_test_meta'][10][ Directory_Post_Type::META_SUMMARY_HTML ] );
 	$item = $serializer->item( $post );
-	if ( null !== $item['policeJoinedAt'] || null !== $item['recognition'] ) {
-		fwrite( STDERR, "Directory serializer failed null semantics for optional institutional fields.\n" ); exit( 1 );
+	if ( null !== $item['policeJoinedAt'] || null !== $item['recognition'] || null !== $item['summaryHtml'] ) {
+		fwrite( STDERR, "Directory serializer failed null semantics for optional fields.\n" ); exit( 1 );
 	}
 
 	$GLOBALS['directory_test_thumbnails'][10] = 0;
