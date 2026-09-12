@@ -16,9 +16,10 @@ final class Directory_Csv_Mode {
 	/**
 	 * Register the CSV-only public/admin import surface.
 	 *
-	 * The existing importer continues to own normalization, preview, batching,
-	 * upsert logic and image sideloading. This class only constrains the exposed
-	 * file format and replaces the template download with a CSV template.
+	 * Directory_Importer owns parsing/normalization/preview. Directory_Import_Batch
+	 * owns the final write phase, including atomic rows and Media Library reuse.
+	 * This class constrains the exposed file format and replaces the template
+	 * download with a CSV template.
 	 *
 	 * @return void
 	 */
@@ -88,7 +89,7 @@ final class Directory_Csv_Mode {
 	}
 
 	/**
-	 * Replace the legacy XLSX-facing copy with the supported CSV terminology.
+	 * Replace legacy XLSX-facing copy and clarify portrait fallback behavior.
 	 *
 	 * @param string $translation Current translation.
 	 * @param string $text        Original source string.
@@ -107,6 +108,7 @@ final class Directory_Csv_Mode {
 			'Privado. Sirve para actualizar esta ficha de forma segura desde Excel.' => 'Privado. Sirve para actualizar esta ficha de forma segura desde CSV.',
 			'Selecciona un archivo Excel o CSV.' => 'Selecciona un archivo CSV.',
 			'Formato no soportado. Usa .xlsx o .csv.' => 'Formato no soportado. Usa un archivo CSV (.csv).',
+			'Importar image_url como retrato' => 'Descargar image_url si no existe en Medios',
 		);
 
 		return isset( $map[ $text ] ) ? $map[ $text ] : $translation;
