@@ -35,6 +35,7 @@ require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Importer.php'
 require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Import_Batch.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Csv_Mode.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Admin.php';
+require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Rich_Summary.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Revalidation.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Module.php';
 
