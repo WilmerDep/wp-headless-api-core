@@ -84,7 +84,7 @@ namespace HeadlessApiCore\Modules\Directory {
 		Directory_Post_Type::META_PHONE            => '(809) 555-0000',
 		Directory_Post_Type::META_EMAIL            => 'persona@example.org',
 		Directory_Post_Type::META_SUMMARY          => "Primer párrafo.\n\nSegundo párrafo.",
-		Directory_Post_Type::META_SUMMARY_HTML     => '<p>Primer <strong>párrafo</strong>.</p><p>Segundo <em>párrafo</em>.<script>x</script></p>',
+		Directory_Post_Type::META_SUMMARY_HTML     => '&lt;p&gt;Primer &lt;strong&gt;párrafo&lt;/strong&gt;.&lt;/p&gt;&lt;p&gt;Segundo &lt;em&gt;párrafo&lt;/em&gt;.&lt;script&gt;x&lt;/script&gt;&lt;/p&gt;',
 		Directory_Post_Type::META_ALT              => 'Retrato institucional',
 		Directory_Post_Type::META_GROUP_ORDER      => array( '12' => 1 ),
 		Directory_Post_Type::META_EXTERNAL_ID      => 'PRIVATE-001',
@@ -118,7 +118,10 @@ namespace HeadlessApiCore\Modules\Directory {
 		fwrite( STDERR, "Directory serializer did not preserve summary paragraph breaks.\n" ); exit( 1 );
 	}
 	if ( '<p>Primer <strong>párrafo</strong>.</p><p>Segundo <em>párrafo</em>.x</p>' !== $item['summaryHtml'] ) {
-		fwrite( STDERR, "Directory serializer failed safe summaryHtml output.\n" ); exit( 1 );
+		fwrite( STDERR, "Directory serializer failed real safe summaryHtml output: {$item['summaryHtml']}\n" ); exit( 1 );
+	}
+	if ( false !== strpos( $item['summaryHtml'], '&lt;p&gt;' ) || false !== strpos( $item['summaryHtml'], '&lt;strong&gt;' ) ) {
+		fwrite( STDERR, "Directory serializer returned encoded summaryHtml tags.\n" ); exit( 1 );
 	}
 	if ( array_key_exists( 'external_id', $item ) || array_key_exists( 'externalId', $item ) ) {
 		fwrite( STDERR, "Directory serializer exposed private external_id.\n" ); exit( 1 );
