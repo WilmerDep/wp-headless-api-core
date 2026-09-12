@@ -192,9 +192,16 @@ final class Directory_Post_Type {
 		);
 	}
 
-	/** Sanitize enriched biography HTML without allowing attributes or active content. */
+	/**
+	 * Sanitize enriched biography HTML without allowing attributes or active content.
+	 *
+	 * TinyMCE/visual-editor submissions can persist literal markup as HTML entities
+	 * (for example &lt;p&gt;). Decode entities first, then apply the strict whitelist
+	 * so the public serializer returns real, safe HTML instead of encoded tags.
+	 */
 	public static function sanitize_summary_html( $value ) {
-		return trim( wp_kses( (string) $value, self::summary_html_allowed_tags() ) );
+		$value = html_entity_decode( (string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		return trim( wp_kses( $value, self::summary_html_allowed_tags() ) );
 	}
 
 	/** Normalize a private import identity key. */
