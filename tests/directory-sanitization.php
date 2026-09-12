@@ -21,6 +21,26 @@ namespace {
 	function absint( $value ) {
 		return abs( (int) $value );
 	}
+
+	function wp_kses( $value, $allowed_html ) {
+		$allowed = '';
+		foreach ( array_keys( $allowed_html ) as $tag ) {
+			$allowed .= '<' . $tag . '>';
+		}
+		$value = strip_tags( (string) $value, $allowed );
+		return preg_replace_callback(
+			'/<\/?([a-z0-9]+)(?:\s[^>]*)?>/i',
+			static function ( $matches ) use ( $allowed_html ) {
+				$tag = strtolower( $matches[1] );
+				if ( ! isset( $allowed_html[ $tag ] ) ) {
+					return '';
+				}
+				$is_close = 0 === strpos( $matches[0], '</' );
+				return $is_close ? '</' . $tag . '>' : '<' . $tag . '>';
+			},
+			$value
+		);
+	}
 }
 
 namespace HeadlessApiCore\Modules\Directory {
@@ -58,6 +78,19 @@ namespace HeadlessApiCore\Modules\Directory {
 
 	if ( '' !== Directory_Post_Type::sanitize_email_value( 'not-an-email' ) ) {
 		fwrite( STDERR, "Directory email sanitizer accepted invalid email.\n" );
+		exit( 1 );
+	}
+
+	$rich = '<p class="bad">Hola <strong data-x="1">Director</strong><script>alert(1)</script><br><em>Institucional</em><a href="https://bad.example">link</a></p>';
+	$clean = Directory_Post_Type::sanitize_summary_html( $rich );
+	$expected = '<p>Hola <strong>Director</strong>alert(1)<br><em>Institucional</em>link</p>';
+	if ( $clean !== $expected ) {
+		fwrite( STDERR, "Directory rich summary sanitizer mismatch: {$clean}\n" );
+		exit( 1 );
+	}
+
+	if ( false !== strpos( $clean, 'class=' ) || false !== strpos( $clean, '<script' ) || false !== strpos( $clean, '<a' ) ) {
+		fwrite( STDERR, "Directory rich summary sanitizer retained forbidden markup.\n" );
 		exit( 1 );
 	}
 
