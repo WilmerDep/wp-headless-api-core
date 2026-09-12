@@ -13,14 +13,16 @@ final class Directory_Post_Type {
 	const POST_TYPE = 'headless_person';
 	const TAXONOMY  = 'headless_directory_group';
 
-	const META_ROLE        = '_headless_directory_role';
-	const META_JOINED_AT   = '_headless_directory_joined_at';
-	const META_PHONE       = '_headless_directory_phone';
-	const META_EMAIL       = '_headless_directory_email';
-	const META_SUMMARY     = '_headless_directory_summary';
-	const META_ALT         = '_headless_directory_alt';
-	const META_EXTERNAL_ID = '_headless_directory_external_id';
-	const META_GROUP_ORDER = '_headless_directory_group_order';
+	const META_ROLE             = '_headless_directory_role';
+	const META_JOINED_AT        = '_headless_directory_joined_at';
+	const META_POLICE_JOINED_AT = '_headless_directory_police_joined_at';
+	const META_RECOGNITION      = '_headless_directory_recognition';
+	const META_PHONE            = '_headless_directory_phone';
+	const META_EMAIL            = '_headless_directory_email';
+	const META_SUMMARY          = '_headless_directory_summary';
+	const META_ALT              = '_headless_directory_alt';
+	const META_EXTERNAL_ID      = '_headless_directory_external_id';
+	const META_GROUP_ORDER      = '_headless_directory_group_order';
 
 	const TERM_META_ORDER = '_headless_directory_order';
 
@@ -114,6 +116,8 @@ final class Directory_Post_Type {
 	public function register_meta() {
 		$this->register_string_meta( self::META_ROLE, 'sanitize_text_field' );
 		$this->register_string_meta( self::META_JOINED_AT, array( __CLASS__, 'sanitize_date' ) );
+		$this->register_string_meta( self::META_POLICE_JOINED_AT, 'sanitize_text_field' );
+		$this->register_string_meta( self::META_RECOGNITION, 'sanitize_text_field' );
 		$this->register_string_meta( self::META_PHONE, 'sanitize_text_field' );
 		$this->register_string_meta( self::META_EMAIL, array( __CLASS__, 'sanitize_email_value' ) );
 		$this->register_string_meta( self::META_SUMMARY, 'sanitize_textarea_field' );
