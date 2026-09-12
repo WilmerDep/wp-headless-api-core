@@ -66,6 +66,9 @@ jobs:
       - name: Run Directory sanitization regression test
         run: php tests/directory-sanitization.php
 
+      - name: Run Directory serializer regression test
+        run: php tests/directory-serializer.php
+
       - name: Run Directory lifecycle hook registration test
         run: php tests/directory-revalidation-hooks.php
 
