@@ -96,6 +96,7 @@ jobs:
             --exclude='.github' \
             --exclude='build' \
             --exclude='tests' \
+            --exclude='project-docs' \
             ./ build/wp-headless-api-core/
           cd build
           zip -rq "wp-headless-api-core-v${PLUGIN_VERSION}.zip" wp-headless-api-core
