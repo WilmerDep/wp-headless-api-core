@@ -12,12 +12,7 @@ use HeadlessApiCore\Revalidation\Revalidation_Client;
 defined( 'ABSPATH' ) || exit;
 
 final class Directory_Module {
-	/**
-	 * Register Directory model, admin workspace, REST API, ordering, importer
-	 * and realtime cache invalidation.
-	 *
-	 * @return void
-	 */
+	/** Register Directory model, admin workspace, REST API and revalidation. */
 	public static function boot() {
 		$post_type = new Directory_Post_Type();
 		$post_type->register();
@@ -38,6 +33,9 @@ final class Directory_Module {
 
 		$admin = new Directory_Admin( $serializer );
 		$admin->register();
+
+		$rich_summary = new Directory_Rich_Summary();
+		$rich_summary->register();
 
 		$controller = new Directory_Controller( $serializer );
 		$controller->register();
