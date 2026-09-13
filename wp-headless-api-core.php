@@ -39,6 +39,7 @@ require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Rich_Summary.
 require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Revalidation.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Module.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Post_Type.php';
+require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Features.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Serializer.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Controller.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Order.php';
