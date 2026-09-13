@@ -44,7 +44,27 @@ final class Services_Controller {
 						'type'              => 'string',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					'group' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_title',
+					),
+					'featured' => array(
+						'required'          => false,
+						'type'              => 'boolean',
+						'sanitize_callback' => 'rest_sanitize_boolean',
+					),
 				),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/services/groups',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_groups' ),
+				'permission_callback' => array( $this, 'public_permission' ),
 			)
 		);
 
@@ -70,7 +90,7 @@ final class Services_Controller {
 		return true;
 	}
 
-	/** Return published services. */
+	/** Return published services with optional group/featured filtering. */
 	public function get_items( WP_REST_Request $request ) {
 		$args = array(
 			'post_type'           => Services_Post_Type::POST_TYPE,
@@ -91,10 +111,79 @@ final class Services_Controller {
 			$args['s'] = $search;
 		}
 
+		$group = sanitize_title( (string) $request->get_param( 'group' ) );
+		if ( '' !== $group ) {
+			$args['tax_query'] = array(
+				array(
+					'taxonomy' => Services_Features::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => array( $group ),
+				),
+			);
+		}
+
+		if ( $request->has_param( 'featured' ) ) {
+			$featured = rest_sanitize_boolean( $request->get_param( 'featured' ) );
+			if ( $featured ) {
+				$args['meta_query'] = array(
+					array(
+						'key'     => Services_Features::META_FEATURED,
+						'value'   => '1',
+						'compare' => '=',
+					),
+				);
+				$args['meta_key'] = Services_Features::META_FEATURED_ORDER;
+				$args['orderby'] = array(
+					'meta_value_num' => 'ASC',
+					'menu_order'     => 'ASC',
+					'ID'             => 'ASC',
+				);
+			} else {
+				$args['meta_query'] = array(
+					'relation' => 'OR',
+					array(
+						'key'     => Services_Features::META_FEATURED,
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => Services_Features::META_FEATURED,
+						'value'   => '1',
+						'compare' => '!=',
+					),
+				);
+			}
+		}
+
 		$query = new WP_Query( $args );
 		$items = array();
 		foreach ( $query->posts as $post ) {
 			$items[] = $this->serializer->item( $post );
+		}
+
+		return new WP_REST_Response( array( 'items' => $items ), 200 );
+	}
+
+	/** Return available service groups. */
+	public function get_groups() {
+		$terms = get_terms(
+			array(
+				'taxonomy'   => Services_Features::TAXONOMY,
+				'hide_empty' => false,
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+			)
+		);
+
+		$items = array();
+		if ( ! is_wp_error( $terms ) ) {
+			foreach ( $terms as $term ) {
+				$items[] = array(
+					'id'    => (int) $term->term_id,
+					'slug'  => sanitize_title( $term->slug ),
+					'name'  => sanitize_text_field( $term->name ),
+					'count' => (int) $term->count,
+				);
+			}
 		}
 
 		return new WP_REST_Response( array( 'items' => $items ), 200 );
