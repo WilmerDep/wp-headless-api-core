@@ -231,7 +231,6 @@ final class Services_Importer {
 		$existing = '' !== $row['external_id'] ? $this->find_by_external_id( $row['external_id'] ) : 0;
 		if ( $existing && 'create_only' === $mode ) { return array( 'status'=>'skipped','message'=>__( 'Ya existe un servicio con ese ID externo.', 'wp-headless-api-core' ) ); }
 
-		// Resolve every group before touching the service so a taxonomy error cannot leave a partial row.
 		$group_ids = $this->resolve_group_ids( $row['groups'] );
 		if ( is_wp_error( $group_ids ) ) {
 			return array( 'status'=>'failed','message'=>$group_ids->get_error_message() );
@@ -280,7 +279,7 @@ final class Services_Importer {
 		}
 
 		if ( $import_images && '' !== $row['image_url'] ) {
-			$attachment_id = $this->resolve_image( $row['image_url'], $row['image_alt'] );
+			$attachment_id = $this->resolve_image( $row['image_url'], $row['image_alt'], $row['title'] );
 			if ( $attachment_id > 0 ) { set_post_thumbnail( $post_id, $attachment_id ); }
 		}
 		return array( 'status'=>$status,'message'=>$existing?__( 'Servicio actualizado.', 'wp-headless-api-core' ):__( 'Servicio creado.', 'wp-headless-api-core' ) );
@@ -291,18 +290,44 @@ final class Services_Importer {
 		return empty( $posts ) ? 0 : (int) $posts[0];
 	}
 
-	private function resolve_image( $url, $alt ) {
-		$path = (string) parse_url( $url, PHP_URL_PATH );
+	/**
+	 * Resolve an image without duplicating media already present in WordPress.
+	 * Exact upload path wins; then filename/post slug/title aliases are checked;
+	 * remote sideloading is only the final fallback.
+	 */
+	private function resolve_image( $url, $alt, $service_title = '' ) {
+		$path   = (string) parse_url( $url, PHP_URL_PATH );
 		$needle = '/wp-content/uploads/';
-		$pos = strpos( $path, $needle );
+		$pos    = strpos( $path, $needle );
+
 		if ( false !== $pos ) {
 			$relative = ltrim( substr( $path, $pos + strlen( $needle ) ), '/' );
-			$ids = get_posts( array( 'post_type'=>'attachment','post_status'=>'inherit','posts_per_page'=>1,'fields'=>'ids','meta_key'=>'_wp_attached_file','meta_value'=>$relative,'no_found_rows'=>true ) );
+			$ids = get_posts( array(
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_key'       => '_wp_attached_file',
+				'meta_value'     => $relative,
+				'no_found_rows'  => true,
+			) );
 			if ( ! empty( $ids ) ) {
-				if ( '' !== $alt ) { update_post_meta( (int)$ids[0], '_wp_attachment_image_alt', $alt ); }
-				return (int)$ids[0];
+				return $this->prepare_attachment( (int) $ids[0], $alt );
 			}
 		}
+
+		$lookup_slugs = array_filter( array_unique( array(
+			sanitize_title( pathinfo( wp_basename( $path ), PATHINFO_FILENAME ) ),
+			sanitize_title( $service_title ),
+		) ) );
+
+		foreach ( $lookup_slugs as $lookup_slug ) {
+			$attachment_id = $this->find_existing_attachment_by_slug( $lookup_slug );
+			if ( $attachment_id > 0 ) {
+				return $this->prepare_attachment( $attachment_id, $alt );
+			}
+		}
+
 		if ( ! function_exists( 'media_sideload_image' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/media.php';
 			require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -310,8 +335,70 @@ final class Services_Importer {
 		}
 		$id = media_sideload_image( $url, 0, $alt, 'id' );
 		if ( is_wp_error( $id ) ) { return 0; }
-		if ( '' !== $alt ) { update_post_meta( (int)$id, '_wp_attachment_image_alt', $alt ); }
-		return (int)$id;
+		return $this->prepare_attachment( (int) $id, $alt );
+	}
+
+	private function find_existing_attachment_by_slug( $lookup_slug ) {
+		$lookup_slug = sanitize_title( $lookup_slug );
+		if ( '' === $lookup_slug ) { return 0; }
+
+		$by_path = get_page_by_path( $lookup_slug, OBJECT, 'attachment' );
+		if ( $by_path && ! empty( $by_path->ID ) ) {
+			return (int) $by_path->ID;
+		}
+
+		$candidates = get_posts( array(
+			'post_type'      => 'attachment',
+			'post_status'    => 'inherit',
+			'posts_per_page' => 20,
+			'fields'         => 'ids',
+			's'              => str_replace( '-', ' ', $lookup_slug ),
+			'no_found_rows'  => true,
+		) );
+		foreach ( $candidates as $candidate_id ) {
+			if ( $this->attachment_matches_slug( (int) $candidate_id, $lookup_slug ) ) {
+				return (int) $candidate_id;
+			}
+		}
+
+		$filename_candidates = get_posts( array(
+			'post_type'      => 'attachment',
+			'post_status'    => 'inherit',
+			'posts_per_page' => 20,
+			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'     => '_wp_attached_file',
+					'value'   => $lookup_slug,
+					'compare' => 'LIKE',
+				),
+			),
+			'no_found_rows'  => true,
+		) );
+		foreach ( $filename_candidates as $candidate_id ) {
+			if ( $this->attachment_matches_slug( (int) $candidate_id, $lookup_slug ) ) {
+				return (int) $candidate_id;
+			}
+		}
+		return 0;
+	}
+
+	private function attachment_matches_slug( $attachment_id, $lookup_slug ) {
+		$post = get_post( $attachment_id );
+		if ( ! $post ) { return false; }
+		if ( sanitize_title( $post->post_name ) === $lookup_slug || sanitize_title( $post->post_title ) === $lookup_slug ) {
+			return true;
+		}
+		$attached_file = (string) get_post_meta( $attachment_id, '_wp_attached_file', true );
+		if ( '' === $attached_file ) { return false; }
+		return sanitize_title( pathinfo( wp_basename( $attached_file ), PATHINFO_FILENAME ) ) === $lookup_slug;
+	}
+
+	private function prepare_attachment( $attachment_id, $alt ) {
+		if ( $attachment_id > 0 && '' !== $alt ) {
+			update_post_meta( $attachment_id, '_wp_attachment_image_alt', $alt );
+		}
+		return (int) $attachment_id;
 	}
 
 	private function transient_key( $token ) {
