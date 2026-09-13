@@ -26,15 +26,18 @@ namespace {
 	function get_post_meta( $post_id, $key, $single = false ) { unset( $single ); return $GLOBALS['service_test_meta'][ $post_id ][ $key ] ?? ''; }
 	function get_post_thumbnail_id( $post ) { return $GLOBALS['service_test_thumbnails'][ $post->ID ] ?? 0; }
 	function wp_get_attachment_image_src( $attachment_id, $size ) { unset( $size ); return $GLOBALS['service_test_images'][ $attachment_id ] ?? false; }
+	function get_the_terms( $post_id, $taxonomy ) { unset( $taxonomy ); return $GLOBALS['service_test_terms'][ $post_id ] ?? array(); }
 
 	$GLOBALS['service_test_meta'] = array();
 	$GLOBALS['service_test_titles'] = array();
 	$GLOBALS['service_test_thumbnails'] = array();
 	$GLOBALS['service_test_images'] = array();
+	$GLOBALS['service_test_terms'] = array();
 }
 
 namespace HeadlessApiCore\Modules\Services {
 	require_once dirname( __DIR__ ) . '/modules/Services/Services_Post_Type.php';
+	require_once dirname( __DIR__ ) . '/modules/Services/Services_Features.php';
 	require_once dirname( __DIR__ ) . '/modules/Services/Services_Serializer.php';
 
 	$post = new \WP_Post( 21, 'anatomia-patologica', 4 );
@@ -42,6 +45,10 @@ namespace HeadlessApiCore\Modules\Services {
 	$GLOBALS['service_test_thumbnails'][21] = 90;
 	$GLOBALS['service_test_images'][90] = array( 'https://cms.example.org/anatomia.jpg', 1600, 900 );
 	$GLOBALS['service_test_meta'][90]['_wp_attachment_image_alt'] = 'Alt de biblioteca';
+	$GLOBALS['service_test_terms'][21] = array(
+		(object) array( 'term_id' => 8, 'slug' => 'diagnostico', 'name' => 'Diagnóstico' ),
+		(object) array( 'term_id' => 3, 'slug' => 'servicios-medicos', 'name' => 'Servicios Médicos' ),
+	);
 	$GLOBALS['service_test_meta'][21] = array(
 		Services_Post_Type::META_DESCRIPTION  => 'Descripción del servicio.',
 		Services_Post_Type::META_AUDIENCE     => 'Todo usuario que requiera el servicio.',
@@ -57,6 +64,8 @@ namespace HeadlessApiCore\Modules\Services {
 		Services_Post_Type::META_ADDRESS      => 'Av. Principal No. 1',
 		Services_Post_Type::META_ALT          => 'Imagen del servicio de Anatomía Patológica',
 		Services_Post_Type::META_EXTERNAL_ID  => 'PRIVATE-SRV-001',
+		Services_Features::META_FEATURED      => '1',
+		Services_Features::META_FEATURED_ORDER => '2',
 	);
 
 	$serializer = new Services_Serializer();
@@ -73,6 +82,12 @@ namespace HeadlessApiCore\Modules\Services {
 	}
 	if ( 'a.usuario@example.org' !== $item['email'] || 'Presencial' !== $item['channel'] || '0.00' !== $item['cost'] ) {
 		fwrite( STDERR, "Services serializer failed operational fields.\n" ); exit( 1 );
+	}
+	if ( true !== $item['featured'] || 2 !== $item['featuredOrder'] || 2 !== count( $item['groups'] ) ) {
+		fwrite( STDERR, "Services serializer failed featured/group fields.\n" ); exit( 1 );
+	}
+	if ( 'diagnostico' !== $item['groups'][0]['slug'] || 'servicios-medicos' !== $item['groups'][1]['slug'] ) {
+		fwrite( STDERR, "Services serializer failed deterministic group ordering.\n" ); exit( 1 );
 	}
 	if ( array_key_exists( 'externalId', $item ) || array_key_exists( 'external_id', $item ) ) {
 		fwrite( STDERR, "Services serializer exposed private external ID.\n" ); exit( 1 );
