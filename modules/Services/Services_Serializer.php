@@ -30,25 +30,31 @@ final class Services_Serializer {
 		$phone        = sanitize_text_field( (string) get_post_meta( $post->ID, Services_Post_Type::META_PHONE, true ) );
 		$email        = Services_Post_Type::sanitize_email_value( get_post_meta( $post->ID, Services_Post_Type::META_EMAIL, true ) );
 		$address      = sanitize_textarea_field( (string) get_post_meta( $post->ID, Services_Post_Type::META_ADDRESS, true ) );
+		$featured     = (bool) get_post_meta( $post->ID, Services_Features::META_FEATURED, true );
+		$featured_order = Services_Features::sanitize_order( get_post_meta( $post->ID, Services_Features::META_FEATURED_ORDER, true ) );
+		$groups       = Services_Features::groups_for_post( $post->ID );
 
 		return array(
-			'id'           => (int) $post->ID,
-			'slug'         => sanitize_title( $post->post_name ),
-			'title'        => sanitize_text_field( get_the_title( $post ) ),
-			'image'        => $image,
-			'description'  => '' !== $description ? $description : null,
-			'audience'     => '' !== $audience ? $audience : null,
-			'department'   => '' !== $department ? $department : null,
-			'requirements' => $requirements,
-			'procedure'    => '' !== $procedure ? $procedure : null,
-			'schedule'     => '' !== $schedule ? $schedule : null,
-			'cost'         => '' !== $cost ? $cost : null,
-			'duration'     => '' !== $duration ? $duration : null,
-			'channel'      => '' !== $channel ? $channel : null,
-			'phone'        => '' !== $phone ? $phone : null,
-			'email'        => '' !== $email ? $email : null,
-			'address'      => '' !== $address ? $address : null,
-			'order'        => (int) $post->menu_order,
+			'id'            => (int) $post->ID,
+			'slug'          => sanitize_title( $post->post_name ),
+			'title'         => sanitize_text_field( get_the_title( $post ) ),
+			'image'         => $image,
+			'description'   => '' !== $description ? $description : null,
+			'audience'      => '' !== $audience ? $audience : null,
+			'department'    => '' !== $department ? $department : null,
+			'requirements'  => $requirements,
+			'procedure'     => '' !== $procedure ? $procedure : null,
+			'schedule'      => '' !== $schedule ? $schedule : null,
+			'cost'          => '' !== $cost ? $cost : null,
+			'duration'      => '' !== $duration ? $duration : null,
+			'channel'       => '' !== $channel ? $channel : null,
+			'phone'         => '' !== $phone ? $phone : null,
+			'email'         => '' !== $email ? $email : null,
+			'address'       => '' !== $address ? $address : null,
+			'featured'      => $featured,
+			'featuredOrder' => $featured_order,
+			'groups'        => $groups,
+			'order'         => (int) $post->menu_order,
 		);
 	}
 
