@@ -18,7 +18,6 @@ final class Services_Order {
 	/** Register admin workspace and AJAX handler. */
 	public function register() {
 		add_action( 'admin_menu', array( $this, 'register_page' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'wp_ajax_headless_services_save_order', array( $this, 'save_order' ) );
 	}
 
@@ -34,15 +33,7 @@ final class Services_Order {
 		);
 	}
 
-	/** Load sortable only on ordering screen. */
-	public function enqueue( $hook ) {
-		if ( 'headless_service_page_' . self::PAGE_SLUG !== $hook ) {
-			return;
-		}
-		wp_enqueue_script( 'jquery-ui-sortable' );
-	}
-
-	/** Render ordering workspace. */
+	/** Render ordering workspace using the same visual system as Directory. */
 	public function render_page() {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_die( esc_html__( 'No tienes permisos para ordenar servicios.', 'wp-headless-api-core' ) );
@@ -50,48 +41,52 @@ final class Services_Order {
 
 		$query = new WP_Query(
 			array(
-				'post_type'      => Services_Post_Type::POST_TYPE,
-				'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
-				'posts_per_page' => -1,
-				'orderby'        => array( 'menu_order' => 'ASC', 'ID' => 'ASC' ),
-				'no_found_rows'  => true,
+				'post_type'           => Services_Post_Type::POST_TYPE,
+				'post_status'         => array( 'publish', 'draft', 'pending', 'private', 'future' ),
+				'posts_per_page'      => -1,
+				'no_found_rows'       => true,
+				'cache_results'       => false,
+				'orderby'             => array( 'menu_order' => 'ASC', 'ID' => 'ASC' ),
 			)
 		);
-		$nonce = wp_create_nonce( self::NONCE_ACTION );
 		?>
-		<div class="wrap">
+		<div class="wrap headless-directory-workspace">
 			<h1><?php esc_html_e( 'Ordenar servicios', 'wp-headless-api-core' ); ?></h1>
-			<p><?php esc_html_e( 'Arrastra los servicios para definir el orden público del catálogo.', 'wp-headless-api-core' ); ?></p>
-			<style>
-				.hac-services-order{max-width:860px;margin-top:18px}.hac-services-order__list{margin:0}.hac-services-order__item{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:12px 14px;margin:0 0 8px;box-shadow:0 1px 1px rgba(0,0,0,.03)}.hac-services-order__handle{cursor:move;color:#646970}.hac-services-order__title{font-weight:600;flex:1}.hac-services-order__status{font-size:12px;color:#646970}.hac-services-order__notice{margin:14px 0 0;min-height:22px}.hac-services-order__item.ui-sortable-helper{box-shadow:0 8px 24px rgba(0,0,0,.12)}
-			</style>
-			<div class="hac-services-order">
-				<ul class="hac-services-order__list" id="hac-services-order-list">
-					<?php foreach ( $query->posts as $post ) : ?>
-						<li class="hac-services-order__item" data-id="<?php echo esc_attr( (string) $post->ID ); ?>">
-							<span class="dashicons dashicons-menu hac-services-order__handle" aria-hidden="true"></span>
-							<span class="hac-services-order__title"><?php echo esc_html( get_the_title( $post ) ); ?></span>
-							<span class="hac-services-order__status"><?php echo esc_html( get_post_status_object( $post->post_status )->label ); ?></span>
+			<p class="headless-directory-lead"><?php esc_html_e( 'Arrastra los servicios para definir el orden público. Los cambios se guardan automáticamente sin recargar la página.', 'wp-headless-api-core' ); ?></p>
+
+			<div class="headless-directory-toolbar-card">
+				<label><?php esc_html_e( 'Orden que estás editando', 'wp-headless-api-core' ); ?></label>
+				<strong><?php esc_html_e( 'Orden global · Todos los servicios', 'wp-headless-api-core' ); ?></strong>
+				<p class="description"><?php esc_html_e( 'Este es el orden utilizado por la API pública y por el catálogo de servicios.', 'wp-headless-api-core' ); ?></p>
+			</div>
+
+			<div class="headless-directory-save-state" aria-live="polite"></div>
+
+			<?php if ( empty( $query->posts ) ) : ?>
+				<div class="headless-directory-empty-state"><?php esc_html_e( 'Aún no hay servicios para ordenar.', 'wp-headless-api-core' ); ?></div>
+			<?php else : ?>
+				<ul class="headless-directory-sortable headless-services-sortable" data-order-type="services">
+					<?php foreach ( $query->posts as $post ) :
+						$thumb      = get_the_post_thumbnail_url( $post, 'thumbnail' );
+						$department = (string) get_post_meta( $post->ID, Services_Post_Type::META_DEPARTMENT, true );
+						$status      = sanitize_key( $post->post_status );
+						?>
+						<li class="headless-directory-sortable-item" data-id="<?php echo esc_attr( (int) $post->ID ); ?>">
+							<span class="dashicons dashicons-menu headless-directory-drag-handle" aria-hidden="true"></span>
+							<div class="headless-directory-sortable-thumb">
+								<?php if ( $thumb ) : ?><img src="<?php echo esc_url( $thumb ); ?>" alt="" /><?php else : ?><span class="dashicons dashicons-heart"></span><?php endif; ?>
+							</div>
+							<div class="headless-directory-sortable-copy">
+								<strong><?php echo esc_html( get_the_title( $post ) ); ?></strong>
+								<?php if ( '' !== $department ) : ?><span><?php echo esc_html( $department ); ?></span><?php endif; ?>
+								<small><?php echo esc_html( sprintf( __( 'Orden %d', 'wp-headless-api-core' ), (int) $post->menu_order ) ); ?></small>
+							</div>
+							<span class="headless-directory-status is-<?php echo esc_attr( $status ); ?>"><?php echo esc_html( get_post_status_object( $post->post_status )->label ); ?></span>
 						</li>
 					<?php endforeach; ?>
 				</ul>
-				<button type="button" class="button button-primary" id="hac-services-save-order"><?php esc_html_e( 'Guardar orden', 'wp-headless-api-core' ); ?></button>
-				<div class="hac-services-order__notice" id="hac-services-order-notice" aria-live="polite"></div>
-			</div>
+			<?php endif; ?>
 		</div>
-		<script>
-		jQuery(function($){
-			var $list=$('#hac-services-order-list'),$button=$('#hac-services-save-order'),$notice=$('#hac-services-order-notice');
-			$list.sortable({handle:'.hac-services-order__handle',axis:'y'});
-			$button.on('click',function(){
-				var ids=$list.children().map(function(){return $(this).data('id');}).get();
-				$button.prop('disabled',true);$notice.text('<?php echo esc_js( __( 'Guardando…', 'wp-headless-api-core' ) ); ?>');
-				$.post(ajaxurl,{action:'headless_services_save_order',nonce:'<?php echo esc_js( $nonce ); ?>',ids:ids}).done(function(response){
-					$notice.text(response&&response.success?'<?php echo esc_js( __( 'Orden guardado.', 'wp-headless-api-core' ) ); ?>':(response&&response.data&&response.data.message?response.data.message:'<?php echo esc_js( __( 'No se pudo guardar el orden.', 'wp-headless-api-core' ) ); ?>'));
-				}).fail(function(){ $notice.text('<?php echo esc_js( __( 'No se pudo guardar el orden.', 'wp-headless-api-core' ) ); ?>'); }).always(function(){ $button.prop('disabled',false); });
-			});
-		});
-		</script>
 		<?php
 	}
 
