@@ -81,6 +81,9 @@ jobs:
       - name: Run Services serializer regression test
         run: php tests/services-serializer.php
 
+      - name: Run Services complete CSV import contract test
+        run: php tests/services-import-contract.php
+
       - name: Run Services lifecycle hook registration test
         run: php tests/services-revalidation-hooks.php
 
