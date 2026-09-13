@@ -81,6 +81,9 @@ jobs:
       - name: Run Services serializer regression test
         run: php tests/services-serializer.php
 
+      - name: Run Services lifecycle hook registration test
+        run: php tests/services-revalidation-hooks.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
