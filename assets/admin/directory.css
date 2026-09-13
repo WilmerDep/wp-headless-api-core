@@ -1,0 +1,657 @@
+.headless-directory-editor,
+.headless-directory-workspace {
+	box-sizing: border-box;
+}
+
+.headless-directory-editor *,
+.headless-directory-workspace * {
+	box-sizing: border-box;
+}
+
+/* WordPress/core styles can override the browser hidden attribute when a
+ * component also declares display:flex/grid. Keep conditional Directory UI
+ * truly hidden so image placeholders and later import steps never overlap. */
+.headless-directory-editor [hidden],
+.headless-directory-workspace [hidden] {
+	display: none !important;
+}
+
+.headless-directory-editor {
+	max-width: 1180px;
+	padding: 12px 4px 6px;
+}
+
+.headless-directory-intro,
+.headless-directory-toolbar-card {
+	border: 1px solid #c8daf0;
+	border-radius: 12px;
+	background: #f4f8fd;
+	padding: 18px 20px;
+	margin-bottom: 20px;
+}
+
+.headless-directory-intro strong,
+.headless-directory-intro span {
+	display: block;
+}
+
+.headless-directory-intro strong {
+	font-size: 14px;
+}
+
+.headless-directory-intro span {
+	margin-top: 5px;
+	color: #50575e;
+	line-height: 1.5;
+}
+
+.headless-directory-editor-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+}
+
+.headless-directory-section {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 14px;
+	padding: 22px;
+	box-shadow: 0 1px 2px rgba(0,0,0,.035);
+}
+
+/* Portrait now shares the first row with professional information. This uses
+ * desktop space better while retaining the single-column responsive fallback. */
+.headless-directory-section--portrait {
+	grid-column: auto;
+}
+
+.headless-directory-section--advanced {
+	grid-column: 1 / -1;
+}
+
+.headless-directory-section-heading {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	padding-bottom: 14px;
+	margin-bottom: 16px;
+	border-bottom: 1px solid #ececec;
+}
+
+.headless-directory-section-heading h2,
+.headless-directory-section-heading h3 {
+	margin: 0;
+	font-size: 16px;
+	line-height: 1.35;
+	font-weight: 600;
+}
+
+.headless-directory-section-heading p {
+	margin: 5px 0 0;
+	color: #646970;
+	line-height: 1.45;
+}
+
+.headless-directory-badge,
+.headless-directory-chip,
+.headless-directory-status {
+	display: inline-flex;
+	align-items: center;
+	width: fit-content;
+	border-radius: 999px;
+	font-size: 12px;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.headless-directory-badge {
+	padding: 7px 10px;
+	font-weight: 600;
+}
+
+.headless-directory-badge.is-required {
+	background: #fff0ef;
+	color: #b42318;
+}
+
+.headless-directory-badge.is-optional {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.headless-directory-image-control {
+	max-width: 430px;
+}
+
+.headless-directory-image-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.headless-directory-chip {
+	padding: 7px 10px;
+	border: 1px solid #c8daf0;
+	background: #f3f8ff;
+	color: #005a9c;
+}
+
+.headless-directory-image-actual {
+	border-color: #dcdcde;
+	background: #fff;
+	color: #50575e;
+}
+
+.headless-directory-image-preview {
+	position: relative;
+	width: min(100%, 330px);
+	aspect-ratio: 3 / 4;
+	min-height: 0;
+	border: 1px dashed #b8c1cc;
+	border-radius: 12px;
+	background: #f6f7f7;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.headless-directory-image-preview.has-image {
+	background: #eef0f2;
+	border-style: solid;
+	border-color: #c3c4c7;
+}
+
+/* The empty state is a true placeholder: it must never coexist visually with
+ * an already selected portrait. The class-based fallback also covers themes or
+ * admin CSS that interfere with the HTML hidden attribute. */
+.headless-directory-image-preview.has-image .headless-directory-image-empty {
+	display: none !important;
+}
+
+.headless-directory-image-preview:not(.has-image) .headless-directory-image-preview-image {
+	display: none !important;
+}
+
+.headless-directory-image-preview-image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center top;
+}
+
+.headless-directory-image-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 20px;
+	text-align: center;
+	color: #646970;
+}
+
+.headless-directory-image-empty .dashicons {
+	font-size: 34px;
+	width: 34px;
+	height: 34px;
+}
+
+.headless-directory-image-actions {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-top: 12px;
+}
+
+.headless-directory-field + .headless-directory-field {
+	margin-top: 16px;
+}
+
+.headless-directory-field label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 7px;
+}
+
+.headless-directory-field input[type="text"],
+.headless-directory-field input[type="email"],
+.headless-directory-field input[type="date"],
+.headless-directory-field input[type="number"],
+.headless-directory-field select,
+.headless-directory-field textarea {
+	min-height: 40px;
+	border-radius: 6px;
+}
+
+.headless-directory-field textarea {
+	resize: vertical;
+	line-height: 1.5;
+}
+
+.headless-directory-field .description {
+	margin: 7px 0 0;
+	line-height: 1.45;
+}
+
+.headless-directory-form-row {
+	display: grid;
+	grid-template-columns: minmax(140px, .45fr) minmax(0, 1fr);
+	gap: 22px;
+	align-items: end;
+}
+
+.headless-directory-groups {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.headless-directory-group-option {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 11px 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 9px;
+	background: #fcfcfc;
+	cursor: pointer;
+	transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.headless-directory-group-option:hover {
+	border-color: #8c8f94;
+	background: #fff;
+}
+
+@supports selector(:has(*)) {
+	.headless-directory-group-option:has(input:checked) {
+		border-color: #72aee6;
+		background: #f0f6fc;
+		box-shadow: 0 0 0 1px rgba(34,113,177,.06);
+	}
+}
+
+.headless-directory-list-thumb {
+	width: 58px;
+	height: 68px;
+	object-fit: cover;
+	border-radius: 7px;
+}
+
+.headless-directory-no-image {
+	color: #8c8f94;
+	font-style: italic;
+}
+
+.headless-directory-workspace {
+	max-width: 1220px;
+}
+
+.headless-directory-workspace > h1 {
+	margin-bottom: 6px;
+}
+
+.headless-directory-lead {
+	max-width: 820px;
+	font-size: 14px;
+	line-height: 1.55;
+	color: #50575e;
+	margin: 0 0 22px;
+}
+
+.headless-directory-workspace .nav-tab-wrapper {
+	margin-bottom: 20px;
+}
+
+.headless-directory-toolbar-card {
+	margin-top: 18px;
+	background: #fff;
+	border-color: #dcdcde;
+	box-shadow: 0 1px 2px rgba(0,0,0,.025);
+}
+
+.headless-directory-toolbar-card label,
+.headless-directory-toolbar-card strong {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 8px;
+}
+
+.headless-directory-toolbar-card select {
+	min-width: 360px;
+	max-width: 100%;
+	min-height: 40px;
+	border-radius: 6px;
+}
+
+.headless-directory-save-state {
+	min-height: 22px;
+	margin: 4px 0 8px;
+	font-weight: 600;
+}
+
+.headless-directory-save-state:empty {
+	min-height: 10px;
+	margin-bottom: 4px;
+}
+
+.headless-directory-save-state.is-saving { color: #50575e; }
+.headless-directory-save-state.is-saved { color: #008a20; }
+.headless-directory-save-state.is-error { color: #b32d2e; }
+
+.headless-directory-sortable {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 10px;
+}
+
+.headless-directory-sortable-item {
+	display: grid;
+	grid-template-columns: 38px 60px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 14px;
+	margin: 0;
+	padding: 12px 15px;
+	border: 1px solid #dcdcde;
+	border-radius: 12px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0,0,0,.025);
+	transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.headless-directory-sortable-item:hover {
+	border-color: #b6b9bd;
+	box-shadow: 0 3px 10px rgba(0,0,0,.045);
+}
+
+/* Group rows have no thumbnail. The old four-column template forced the copy
+ * into the 58px thumbnail column, which caused the visible Admini… truncation. */
+.headless-directory-sortable[data-order-type="groups"] .headless-directory-sortable-item {
+	grid-template-columns: 38px minmax(0, 1fr);
+	min-height: 76px;
+	padding: 14px 16px;
+}
+
+.headless-directory-sortable[data-order-type="groups"] .headless-directory-sortable-copy {
+	max-width: none;
+}
+
+.headless-directory-sortable-item.ui-sortable-helper {
+	box-shadow: 0 12px 30px rgba(0,0,0,.14);
+	border-color: #2271b1;
+	transform: scale(1.005);
+}
+
+.headless-directory-sortable-item.ui-sortable-placeholder {
+	visibility: visible !important;
+	border: 1px dashed #72aee6;
+	background: #f0f6fc;
+	min-height: 82px;
+}
+
+.headless-directory-drag-handle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: grab;
+	color: #646970;
+	font-size: 20px;
+	width: 30px;
+	height: 30px;
+	border-radius: 7px;
+	transition: color .16s ease, background .16s ease;
+}
+
+.headless-directory-sortable-item:hover .headless-directory-drag-handle {
+	color: #2271b1;
+	background: #f0f6fc;
+}
+
+.headless-directory-drag-handle:active { cursor: grabbing; }
+
+.headless-directory-sortable-thumb {
+	width: 60px;
+	height: 66px;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #f0f0f1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.headless-directory-sortable-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.headless-directory-sortable-copy {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.headless-directory-sortable-copy strong {
+	font-size: 14px;
+	line-height: 1.3;
+}
+
+.headless-directory-sortable-copy strong,
+.headless-directory-sortable-copy span,
+.headless-directory-sortable-copy small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.headless-directory-sortable-copy span,
+.headless-directory-sortable-copy small {
+	color: #646970;
+}
+
+.headless-directory-status {
+	padding: 7px 10px;
+	background: #f0f0f1;
+	color: #50575e;
+	text-transform: capitalize;
+	font-weight: 600;
+}
+
+.headless-directory-status.is-publish { background: #edfaef; color: #007017; }
+.headless-directory-status.is-draft { background: #fff8e5; color: #8a5a00; }
+.headless-directory-status.is-private { background: #f3e8ff; color: #6b21a8; }
+.headless-directory-status.is-future { background: #eef5ff; color: #135e96; }
+
+.headless-directory-empty-state {
+	padding: 40px 22px;
+	text-align: center;
+	border: 1px dashed #c3c4c7;
+	border-radius: 12px;
+	background: #fff;
+	color: #646970;
+}
+
+.headless-directory-import-layout {
+	display: grid;
+	gap: 20px;
+}
+
+.headless-directory-import-page .headless-directory-section {
+	box-shadow: 0 2px 8px rgba(0,0,0,.03);
+}
+
+.headless-directory-dropzone {
+	position: relative;
+	min-height: 210px;
+	border: 2px dashed #a7aaad;
+	border-radius: 14px;
+	background: linear-gradient(180deg, #fbfcfd 0%, #f7f8fa 100%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 28px;
+	text-align: center;
+	cursor: pointer;
+	transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+.headless-directory-dropzone:hover,
+.headless-directory-dropzone.is-dragover {
+	border-color: #2271b1;
+	background: #f0f6fc;
+	box-shadow: inset 0 0 0 1px rgba(34,113,177,.04);
+}
+
+.headless-directory-dropzone.is-dragover { transform: translateY(-1px); }
+
+.headless-directory-dropzone .dashicons {
+	font-size: 42px;
+	width: 42px;
+	height: 42px;
+	color: #2271b1;
+}
+
+.headless-directory-dropzone strong {
+	font-size: 15px;
+}
+
+.headless-directory-import-file {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.headless-directory-import-file-name {
+	margin: 10px 0;
+	font-weight: 600;
+}
+
+.headless-directory-import-kpis {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.headless-directory-import-kpi {
+	padding: 16px;
+	border: 1px solid #dcdcde;
+	border-radius: 10px;
+	background: #fcfcfc;
+}
+
+.headless-directory-import-kpi strong {
+	display: block;
+	font-size: 22px;
+	line-height: 1.1;
+	margin-bottom: 4px;
+}
+
+.headless-directory-import-kpi.is-ready strong { color: #008a20; }
+.headless-directory-import-kpi.is-warning strong { color: #996800; }
+.headless-directory-import-kpi.is-error strong { color: #b32d2e; }
+
+.headless-directory-import-table-wrap {
+	max-height: 440px;
+	overflow: auto;
+	border: 1px solid #dcdcde;
+	border-radius: 10px;
+	background: #fff;
+}
+
+.headless-directory-import-table-wrap table { border: 0; }
+
+.headless-directory-validation-pill {
+	display: inline-flex;
+	padding: 5px 8px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.headless-directory-validation-pill.is-ready { background: #edfaef; color: #007017; }
+.headless-directory-validation-pill.is-warning { background: #fff8e5; color: #8a5a00; }
+.headless-directory-validation-pill.is-error { background: #fff0ef; color: #b42318; }
+
+.headless-directory-toggle {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 40px;
+}
+
+.headless-directory-progress {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 18px;
+}
+
+.headless-directory-progress-bar {
+	position: relative;
+	flex: 1;
+	height: 10px;
+	border-radius: 999px;
+	background: #e2e4e7;
+	overflow: hidden;
+}
+
+.headless-directory-progress-bar span {
+	display: block;
+	width: 0;
+	height: 100%;
+	background: #2271b1;
+	transition: width .2s ease;
+}
+
+.headless-directory-import-result {
+	margin-top: 16px;
+}
+
+.headless-directory-result-card {
+	padding: 14px 16px;
+	border-radius: 10px;
+	border: 1px solid #b8d7be;
+	background: #f0faf2;
+}
+
+@media (max-width: 1100px) {
+	.headless-directory-editor-grid,
+	.headless-directory-form-row {
+		grid-template-columns: 1fr;
+	}
+
+	.headless-directory-section--portrait,
+	.headless-directory-section--advanced {
+		grid-column: auto;
+	}
+
+	.headless-directory-image-control {
+		max-width: none;
+	}
+}
+
+@media (max-width: 782px) {
+	.headless-directory-editor { padding-right: 0; }
+	.headless-directory-section { padding: 16px; border-radius: 10px; }
+	.headless-directory-groups,
+	.headless-directory-import-kpis { grid-template-columns: 1fr; }
+	.headless-directory-sortable-item { grid-template-columns: 30px 50px minmax(0,1fr); }
+	.headless-directory-sortable[data-order-type="groups"] .headless-directory-sortable-item { grid-template-columns: 30px minmax(0,1fr); }
+	.headless-directory-status { grid-column: 3; justify-self: start; }
+	.headless-directory-toolbar-card select { min-width: 0; width: 100%; }
+	.headless-directory-image-preview { width: min(100%, 330px); }
+	.headless-directory-section-heading { gap: 10px; }
+}

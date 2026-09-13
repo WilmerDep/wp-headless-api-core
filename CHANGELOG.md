@@ -6,6 +6,30 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Hero v0.3.4 candidate
+
+#### Added
+
+- Hero now reuses the generic signed `Revalidation_Client` already approved for News.
+- New isolated `Hero_Revalidation` lifecycle observer emits `resource="hero"` events for public visibility changes, published edits, relevant Hero metadata, ordering and permanent deletion.
+- Hero revalidation uses the existing HMAC SHA-256 timestamp/signature transport and the existing `HEADLESS_REVALIDATION_*` configuration without introducing a second webhook mechanism.
+- Request-local Hero events are deduplicated until `shutdown`, with `deleted > status_changed > content_updated` priority.
+- Isolated Hero hook/lifecycle regression coverage validates publish/draft/private/trash/future transitions, republication, order/meta changes, deletion and Consumer delivery failure.
+
+#### Changed
+
+- Hero image cards now show subtle recommended pixel guidance for editors: `1920 × 800 px` for the primary desktop/laptop/tablet image and `1200 × 750 px` for the optional mobile image.
+- When an image is already selected, the editor also shows its real original dimensions as an `Actual` chip and updates that value immediately when the image changes.
+- Removing an image clears only the `Actual` chip; the recommendation remains visible as guidance.
+- Plugin version is `0.3.4`, covering both the validated image-guidance polish and Hero realtime revalidation before the candidate is promoted.
+- The public `/hero` REST contract, Hero serialization and News behavior remain unchanged.
+
+#### Consumer contract
+
+- Hero webhook payload contains `resource`, `postId`, `status`, `previousStatus` and `event`; Hero does not use slug fields.
+- Consumers should invalidate the general Hero data/tag and the Home surface when `resource="hero"` is authenticated successfully.
+- The existing short TTL remains a fallback correctness layer; realtime webhook delivery is the acceleration path.
+
 ### Hero v0.3.3 candidate
 
 #### Added
@@ -41,8 +65,8 @@ The project follows Semantic Versioning.
 #### Pending validation
 
 - Install latest Hero candidate ZIP on the WordPress QA target.
-- Complete final runtime checks for link normalization, trash/future visibility and Consumer integration.
-- Validate the first Consumer end-to-end.
+- Complete final runtime checks for Hero revalidation delivery and Consumer integration.
+- Validate the first Consumer end-to-end after its `resource="hero"` invalidation support is added.
 
 ## [0.2.2] - 2026-09-10
 
@@ -75,7 +99,7 @@ The project follows Semantic Versioning.
 - Automated CI/package passed.
 - v0.2.2 installed on the HOSGEDOPOL CMS.
 - Provider `/news` and `/news/{slug}` reflect editorial visibility changes on a normal refresh after freshness hardening.
-- Provider-side News lifecycle/freshness gate closed and PR #6 squash-merged into `develop` at `20b134052beffcded254ac5b41384f15ec3dcda7`.
+- Provider-side News gate closed and PR #6 squash-merged into `develop` at `20b134052beffcded254ac5b41384f15ec3dcda7`.
 - Remaining skeleton/on-focus behavior belongs to the Consumer and does not block Provider development.
 
 ## [0.2.1] - 2026-09-10

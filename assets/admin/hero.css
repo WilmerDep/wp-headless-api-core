@@ -139,6 +139,38 @@
 	color: #50575e;
 }
 
+.headless-hero-image-guidance {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 7px;
+	min-height: 24px;
+}
+
+.headless-hero-size-chip {
+	display: inline-flex;
+	align-items: center;
+	min-height: 24px;
+	padding: 3px 9px;
+	border: 1px solid #dcdcde;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.25;
+	white-space: nowrap;
+}
+
+.headless-hero-size-chip.is-recommended {
+	border-color: #c6d7e8;
+	background: #f0f6fc;
+	color: #135e96;
+}
+
+.headless-hero-size-chip.is-actual {
+	background: #f6f7f7;
+	color: #50575e;
+}
+
 .headless-hero-image-preview {
 	display: grid;
 	place-items: center;
@@ -283,6 +315,10 @@
 
 	.headless-hero-image-card {
 		padding: 15px;
+	}
+
+	.headless-hero-size-chip {
+		white-space: normal;
 	}
 
 	.headless-hero-image-preview,
