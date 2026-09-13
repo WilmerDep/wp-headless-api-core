@@ -10,6 +10,7 @@ namespace HeadlessApiCore\Core;
 use HeadlessApiCore\Modules\Directory\Directory_Module;
 use HeadlessApiCore\Modules\Hero\Hero_Module;
 use HeadlessApiCore\Modules\News\News_Module;
+use HeadlessApiCore\Modules\Services\Services_Module;
 use HeadlessApiCore\Rest\Health_Controller;
 
 defined( 'ABSPATH' ) || exit;
@@ -27,11 +28,7 @@ final class Plugin {
 	 */
 	private static $booted = false;
 
-	/**
-	 * Bootstrap the plugin modules available in this version.
-	 *
-	 * @return void
-	 */
+	/** Bootstrap the plugin modules available in this version. */
 	public static function boot() {
 		if ( self::$booted ) {
 			return;
@@ -45,5 +42,6 @@ final class Plugin {
 		News_Module::boot();
 		Hero_Module::boot();
 		Directory_Module::boot();
+		Services_Module::boot();
 	}
 }
