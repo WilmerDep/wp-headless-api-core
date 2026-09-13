@@ -79,9 +79,10 @@
 				forcePlaceholderSize: true,
 				update: function () {
 					var ids = $list.children('.headless-directory-sortable-item').map(function () { return $(this).data('id'); }).get();
+					var orderType = $list.data('order-type') || 'all';
 					var $state = $('.headless-directory-save-state').first();
 					setSaveState($state, 'saving', text('saving', 'Guardando…'));
-					$.post(cfg.ajaxUrl, { action: 'headless_services_save_order', nonce: cfg.orderNonce, ids: ids }).done(function (response) {
+					$.post(cfg.ajaxUrl, { action: 'headless_services_save_order', nonce: cfg.orderNonce, ids: ids, orderType: orderType }).done(function (response) {
 						if (response && response.success) {
 							setSaveState($state, 'saved', (response.data && response.data.message) || text('saved', 'Guardado'));
 							window.setTimeout(function () { $state.text('').removeClass('is-saved'); }, 1800);
