@@ -41,7 +41,9 @@ require_once HEADLESS_API_CORE_PATH . 'modules/Directory/Directory_Module.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Post_Type.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Serializer.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Controller.php';
+require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Order.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Admin.php';
+require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Revalidation.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Services/Services_Module.php';
 
 add_action( 'plugins_loaded', array( 'HeadlessApiCore\\Core\\Plugin', 'boot' ) );
