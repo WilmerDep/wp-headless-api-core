@@ -129,7 +129,9 @@
 			var validation = 'ready', label = 'Listo', message = '';
 			if (row.errors && row.errors.length) { validation = 'error'; label = 'Error'; message = row.errors.join(' '); }
 			else if (row.warnings && row.warnings.length) { validation = 'warning'; label = 'Revisar'; message = row.warnings.join(' '); }
-			html += '<tr><td>' + escapeHtml(row.row) + '</td><td><strong>' + escapeHtml(row.title || '') + '</strong></td><td>' + escapeHtml(row.department || '') + '</td><td>' + escapeHtml((row.requirements || []).length) + '</td><td>' + escapeHtml(row.status || '') + '</td><td><span class="headless-directory-validation-pill is-' + validation + '">' + label + '</span>' + (message ? '<div class="description">' + escapeHtml(message) + '</div>' : '') + '</td></tr>';
+			var groups = (row.groups || []).map(function (group) { return group.name || group.slug || ''; }).filter(Boolean).join(', ');
+			var featured = parseInt(row.featured || 0, 10) === 1 ? 'Sí · ' + (parseInt(row.featured_order || 0, 10)) : 'No';
+			html += '<tr><td>' + escapeHtml(row.row) + '</td><td><strong>' + escapeHtml(row.title || '') + '</strong></td><td>' + escapeHtml(row.department || '') + '</td><td>' + escapeHtml(groups || '—') + '</td><td>' + escapeHtml(featured) + '</td><td>' + escapeHtml((row.requirements || []).length) + '</td><td>' + escapeHtml(row.status || '') + '</td><td><span class="headless-directory-validation-pill is-' + validation + '">' + label + '</span>' + (message ? '<div class="description">' + escapeHtml(message) + '</div>' : '') + '</td></tr>';
 		});
 		$('.headless-services-import-preview tbody').html(html);
 		$('.headless-services-import-preview, .headless-services-import-options').prop('hidden', false);
