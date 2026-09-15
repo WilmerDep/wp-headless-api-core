@@ -5,10 +5,11 @@
 
 define( 'ABSPATH', __DIR__ );
 
-$root   = dirname( __DIR__ );
-$compat = file_get_contents( $root . '/modules/Forms/Forms_Compatibility.php' );
-$boot   = file_get_contents( $root . '/modules/Forms/Forms_Module.php' );
-$plugin = file_get_contents( $root . '/wp-headless-api-core.php' );
+$root      = dirname( __DIR__ );
+$compat    = file_get_contents( $root . '/modules/Forms/Forms_Compatibility.php' );
+$editorial = file_get_contents( $root . '/assets/admin/forms-editorial-ux.js' );
+$boot      = file_get_contents( $root . '/modules/Forms/Forms_Module.php' );
+$plugin    = file_get_contents( $root . '/wp-headless-api-core.php' );
 
 foreach (
 	array(
@@ -17,7 +18,6 @@ foreach (
 		'repair_existing_meta_once',
 		'JSON_UNESCAPED_UNICODE',
 		'wp_slash( $canonical )',
-		"'Subtítulo'",
 		'/u([0-9a-fA-F]{4})/',
 		'/u(d[89ab][0-9a-f]{2})u(d[cdef][0-9a-f]{2})/i',
 		'headless_api_core_forms_json_unicode_v076',
@@ -27,6 +27,11 @@ foreach (
 		fwrite( STDERR, "Forms unicode compatibility contract missing: {$needle}\n" );
 		exit( 1 );
 	}
+}
+
+if ( false === strpos( $editorial, 'Subtítulo' ) ) {
+	fwrite( STDERR, "Forms editorial layer lost the Spanish subtitle label.\n" );
+	exit( 1 );
 }
 
 if ( false === strpos( $boot, 'new Forms_Compatibility()' ) || false === strpos( $boot, '$compatibility->register()' ) ) {
