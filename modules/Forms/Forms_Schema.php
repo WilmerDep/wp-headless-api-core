@@ -20,6 +20,20 @@ final class Forms_Schema {
 		);
 	}
 
+	/**
+	 * Sanitize a public field name while preserving consumer casing.
+	 *
+	 * Existing Consumers use names such as fullName and appointmentDate, so
+	 * sanitize_key() cannot be used here because it lowercases identifiers.
+	 */
+	public static function sanitize_field_name( $value ) {
+		$value = trim( (string) $value );
+		if ( ! preg_match( '/^[A-Za-z][A-Za-z0-9_-]*$/', $value ) ) {
+			return '';
+		}
+		return $value;
+	}
+
 	/** Decode a JSON meta value into an array. */
 	public static function decode_json( $value, $fallback = array() ) {
 		if ( is_array( $value ) ) {
@@ -123,7 +137,7 @@ final class Forms_Schema {
 			if ( ! is_array( $rule ) ) {
 				continue;
 			}
-			$field    = isset( $rule['field'] ) ? sanitize_key( $rule['field'] ) : '';
+			$field    = isset( $rule['field'] ) ? self::sanitize_field_name( $rule['field'] ) : '';
 			$operator = isset( $rule['operator'] ) ? sanitize_key( $rule['operator'] ) : '';
 			if ( '' === $field || ! in_array( $operator, $operators, true ) ) {
 				continue;
@@ -150,7 +164,7 @@ final class Forms_Schema {
 			if ( ! is_array( $field ) ) {
 				continue;
 			}
-			$name = isset( $field['name'] ) ? sanitize_key( $field['name'] ) : '';
+			$name = isset( $field['name'] ) ? self::sanitize_field_name( $field['name'] ) : '';
 			if ( '' === $name || isset( $seen[ $name ] ) ) {
 				continue;
 			}
@@ -170,7 +184,7 @@ final class Forms_Schema {
 			}
 
 			$fields[] = array(
-				'id'           => isset( $field['id'] ) ? sanitize_key( $field['id'] ) : $name,
+				'id'           => isset( $field['id'] ) ? sanitize_key( $field['id'] ) : sanitize_key( $name ),
 				'name'         => $name,
 				'type'         => $type,
 				'label'        => isset( $field['label'] ) ? sanitize_text_field( $field['label'] ) : $name,
@@ -202,8 +216,9 @@ final class Forms_Schema {
 		if ( is_email( $value ) ) {
 			return $value;
 		}
-		if ( preg_match( '/^\{\{field\.([A-Za-z0-9_-]+)\}\}$/', $value, $matches ) ) {
-			return '{{field.' . sanitize_key( $matches[1] ) . '}}';
+		if ( preg_match( '/^\{\{field\.([A-Za-z][A-Za-z0-9_-]*)\}\}$/', $value, $matches ) ) {
+			$field_name = self::sanitize_field_name( $matches[1] );
+			return $field_name ? '{{field.' . $field_name . '}}' : '';
 		}
 		return '';
 	}
@@ -228,7 +243,7 @@ final class Forms_Schema {
 				'to'           => $recipients['to'],
 				'cc'           => $recipients['cc'],
 				'bcc'          => $recipients['bcc'],
-				'replyToField' => isset( $notification['replyToField'] ) ? sanitize_key( $notification['replyToField'] ) : '',
+				'replyToField' => isset( $notification['replyToField'] ) ? self::sanitize_field_name( $notification['replyToField'] ) : '',
 				'subject'      => isset( $notification['subject'] ) ? sanitize_text_field( $notification['subject'] ) : '',
 			);
 		}
@@ -240,7 +255,7 @@ final class Forms_Schema {
 		$value = self::decode_json( $value );
 		return array(
 			'honeypot'      => ! isset( $value['honeypot'] ) || (bool) $value['honeypot'],
-			'honeypotField' => isset( $value['honeypotField'] ) ? sanitize_key( $value['honeypotField'] ) : 'website',
+			'honeypotField' => isset( $value['honeypotField'] ) ? self::sanitize_field_name( $value['honeypotField'] ) : 'website',
 			'maxPayload'    => isset( $value['maxPayload'] ) ? max( 4096, min( 262144, absint( $value['maxPayload'] ) ) ) : 65536,
 		);
 	}
