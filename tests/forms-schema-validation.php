@@ -25,6 +25,10 @@ namespace {
 		$value = strtolower( trim( (string) $value ) );
 		return trim( preg_replace( '/[^a-z0-9]+/', '-', $value ), '-' );
 	}
+	function sanitize_email( $value ) {
+		$value = trim( (string) $value );
+		return false !== filter_var( $value, FILTER_VALIDATE_EMAIL ) ? $value : '';
+	}
 	function absint( $value ) {
 		return abs( (int) $value );
 	}
@@ -92,6 +96,10 @@ namespace HeadlessApiCore\Modules\Forms {
 		fwrite( STDERR, "Duplicate field names must be removed.\n" );
 		exit( 1 );
 	}
+	if ( 'fullName' !== $fields[0]['name'] ) {
+		fwrite( STDERR, "Consumer field names must preserve camelCase identifiers.\n" );
+		exit( 1 );
+	}
 	if ( 12 !== $fields[1]['width'] ) {
 		fwrite( STDERR, "Field width must be clamped to the 12-column contract.\n" );
 		exit( 1 );
@@ -104,14 +112,19 @@ namespace HeadlessApiCore\Modules\Forms {
 	$notifications = Forms_Schema::normalize_notifications(
 		array(
 			array(
-				'id'       => 'Admin',
-				'template' => 'Institutional',
-				'to'       => array( 'forms@example.test', '{{field.email}}', 'bad-address' ),
+				'id'           => 'Admin',
+				'template'     => 'Institutional',
+				'to'           => array( 'forms@example.test', '{{field.email}}', 'bad-address' ),
+				'replyToField' => 'fullName',
 			)
 		)
 	);
 	if ( 2 !== count( $notifications[0]['to'] ) || 'institutional' !== $notifications[0]['template'] ) {
 		fwrite( STDERR, "Notification recipients/template must be normalized safely.\n" );
+		exit( 1 );
+	}
+	if ( 'fullName' !== $notifications[0]['replyToField'] ) {
+		fwrite( STDERR, "Notification field references must preserve consumer casing.\n" );
 		exit( 1 );
 	}
 
@@ -127,8 +140,8 @@ namespace HeadlessApiCore\Modules\Forms {
 		),
 		'website'
 	);
-	if ( ! $result['valid'] || isset( $result['fieldErrors']['doctor'] ) ) {
-		fwrite( STDERR, "A conditionally hidden required field must not fail validation.\n" );
+	if ( ! $result['valid'] || isset( $result['fieldErrors']['doctor'] ) || 'Ana Pérez' !== $result['values']['fullName'] ) {
+		fwrite( STDERR, "A conditionally hidden required field must not fail validation and camelCase values must survive.\n" );
 		exit( 1 );
 	}
 
