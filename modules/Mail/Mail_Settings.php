@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class Mail_Settings {
 	const OPTION_NAME = 'headless_api_core_mail';
+	const LAST_TEST_OPTION = 'headless_api_core_mail_last_test';
 
 	/**
 	 * Return persisted settings with optional wp-config.php overrides.
@@ -60,6 +61,113 @@ final class Mail_Settings {
 		$settings['encryption'] = in_array( $settings['encryption'], array( 'tls', 'ssl', 'none' ), true ) ? $settings['encryption'] : 'tls';
 
 		return $settings;
+	}
+
+	/** Whether SMTP delivery is enabled. */
+	public function is_enabled() {
+		$settings = $this->get();
+		return ! empty( $settings['enabled'] );
+	}
+
+	/**
+	 * Whether the minimum transport configuration is present.
+	 *
+	 * This intentionally validates capability rather than provider-specific
+	 * conventions so future Forms/notifications modules can depend on it.
+	 */
+	public function is_configured() {
+		$settings = $this->get();
+
+		if ( '' === trim( (string) $settings['host'] ) || empty( $settings['port'] ) ) {
+			return false;
+		}
+
+		if ( ! empty( $settings['auth'] ) ) {
+			if ( '' === trim( (string) $settings['username'] ) || '' === (string) $settings['password'] ) {
+				return false;
+			}
+		}
+
+		if ( ! empty( $settings['force_from'] ) && ! is_email( (string) $settings['from_email'] ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/** Whether the transport can be used by dependent modules. */
+	public function is_ready() {
+		return $this->is_enabled() && $this->is_configured();
+	}
+
+	/**
+	 * Persist a safe transport-test result for health/status consumers.
+	 *
+	 * No recipient, host, username, password or raw SMTP error is stored here.
+	 *
+	 * @param bool $success Whether wp_mail() accepted the test delivery.
+	 */
+	public function record_test( $success ) {
+		update_option(
+			self::LAST_TEST_OPTION,
+			array(
+				'success'   => (bool) $success,
+				'tested_at' => time(),
+			),
+			false
+		);
+	}
+
+	/** Return the last safe SMTP test result, or null when never tested. */
+	public function get_last_test() {
+		$stored = get_option( self::LAST_TEST_OPTION, null );
+		if ( ! is_array( $stored ) || ! isset( $stored['success'], $stored['tested_at'] ) ) {
+			return null;
+		}
+
+		$timestamp = absint( $stored['tested_at'] );
+		if ( $timestamp < 1 ) {
+			return null;
+		}
+
+		return array(
+			'success'  => (bool) $stored['success'],
+			'testedAt' => gmdate( 'c', $timestamp ),
+		);
+	}
+
+	/**
+	 * Safe public status contract for headless consumers.
+	 *
+	 * Credentials and provider-specific connection details are deliberately
+	 * excluded. Consumers only learn whether the mail capability is available.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public function public_status() {
+		$enabled    = $this->is_enabled();
+		$configured = $this->is_configured();
+		$ready      = $enabled && $configured;
+		$status     = 'ready';
+
+		if ( ! $enabled ) {
+			$status = 'disabled';
+		} elseif ( ! $configured ) {
+			$status = 'incomplete';
+		}
+
+		return array(
+			'schemaVersion' => 1,
+			'transport'     => 'smtp',
+			'enabled'       => $enabled,
+			'configured'    => $configured,
+			'ready'         => $ready,
+			'status'        => $status,
+			'lastTest'      => $this->get_last_test(),
+			'capabilities'  => array(
+				'send' => $ready,
+			),
+		);
 	}
 
 	/**
