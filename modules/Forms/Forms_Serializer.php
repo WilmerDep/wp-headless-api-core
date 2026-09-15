@@ -24,16 +24,9 @@ final class Forms_Serializer {
 	public function serialize( WP_Post $post ) {
 		$enabled       = (bool) get_post_meta( $post->ID, Forms_Post_Type::META_ENABLED, true );
 		$notifications = Forms_Schema::normalize_notifications( get_post_meta( $post->ID, Forms_Post_Type::META_NOTIFICATIONS, true ) );
-		$mail_required = false;
-
-		foreach ( $notifications as $notification ) {
-			if ( ! empty( $notification['enabled'] ) ) {
-				$mail_required = true;
-				break;
-			}
-		}
-
-		$submission_available = $enabled && ( ! $mail_required || $this->mail_settings->is_ready() );
+		$delivery_ready = $this->notifications_ready( $notifications );
+		$submission_available = $enabled && $delivery_ready && $this->mail_settings->is_ready();
+		$submission_available = (bool) apply_filters( 'headless_api_core_form_submission_available', $submission_available, $post, $notifications );
 
 		return array(
 			'id'             => (int) $post->ID,
@@ -51,5 +44,26 @@ final class Forms_Serializer {
 				'available' => $submission_available,
 			),
 		);
+	}
+
+	/** Require at least one complete, published notification route. */
+	private function notifications_ready( array $notifications ) {
+		$active = array_values( array_filter( $notifications, static function ( $notification ) {
+			return ! empty( $notification['enabled'] );
+		} ) );
+		if ( empty( $active ) ) {
+			return false;
+		}
+
+		foreach ( $active as $notification ) {
+			if ( empty( $notification['to'] ) || empty( $notification['template'] ) ) {
+				return false;
+			}
+			$template = get_page_by_path( $notification['template'], OBJECT, Forms_Post_Type::TEMPLATE_POST_TYPE );
+			if ( ! $template || 'publish' !== $template->post_status ) {
+				return false;
+			}
+		}
+		return true;
 	}
 }
