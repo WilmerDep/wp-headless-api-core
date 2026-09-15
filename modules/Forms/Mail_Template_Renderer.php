@@ -103,6 +103,7 @@ final class Mail_Template_Renderer {
 		$footer    = isset( $visual['footer'] ) ? sanitize_textarea_field( $visual['footer'] ) : '';
 		$logo_url  = isset( $visual['logoUrl'] ) ? esc_url_raw( $visual['logoUrl'], array( 'http', 'https' ) ) : '';
 		$logo      = '';
+		$table     = $this->field_rows_html( $rows, $label, $value, $separator );
 
 		if ( $logo_url ) {
 			$logo = '<td style="width:88px;vertical-align:middle;text-align:right;padding:0 0 0 18px"><img src="' . esc_url( $logo_url ) . '" width="72" alt="" style="display:block;max-width:72px;height:auto;margin-left:auto;border:0;outline:none" /></td>';
@@ -120,7 +121,7 @@ final class Mail_Template_Renderer {
 			. '<div style="background:' . esc_attr( $header ) . ';color:#fff;padding:22px 28px"><table role="presentation" style="width:100%;border-collapse:collapse"><tr><td style="vertical-align:middle;padding:0">'
 			. '<div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.82">' . esc_html( $eyebrow ) . '</div>'
 			. '<h1 style="margin:8px 0 0;font-size:24px;line-height:1.15;color:#fff">' . esc_html( $heading ) . '</h1></td>' . $logo . '</tr></table></div>'
-			. '<div style="padding:24px 28px 28px">' . $intro_html . '{{form.fields}}</div>'
+			. '<div style="padding:24px 28px 28px">' . $intro_html . $table . '</div>'
 			. $footer_html . '</div></div>';
 	}
 
