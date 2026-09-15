@@ -12,16 +12,16 @@ $plugin   = file_get_contents( $root . '/wp-headless-api-core.php' );
 
 foreach (
 	array(
-		"add_submenu_page(",
-		"admin_post_headless_forms_package_preview",
-		"admin_post_headless_forms_package_import",
-		"admin_post_headless_forms_package_example",
-		"schemaVersion",
-		"create_only",
-		"upsert",
-		"get_page_by_path( $item['slug']",
-		"wp_insert_post(",
-		"wp_update_post(",
+		'add_submenu_page(',
+		'admin_post_headless_forms_package_preview',
+		'admin_post_headless_forms_package_import',
+		'admin_post_headless_forms_package_example',
+		'schemaVersion',
+		'create_only',
+		'upsert',
+		"get_page_by_path( \$item['slug']",
+		'wp_insert_post(',
+		'wp_update_post(',
 	) as $needle
 ) {
 	if ( false === strpos( $importer, $needle ) ) {
@@ -35,13 +35,13 @@ if ( false === strpos( $module, 'new Forms_Package_Importer()' ) || false === st
 	exit( 1 );
 }
 
-if ( false === strpos( $plugin, "modules/Forms/Forms_Package_Importer.php" ) ) {
+if ( false === strpos( $plugin, 'modules/Forms/Forms_Package_Importer.php' ) ) {
 	fwrite( STDERR, "Forms package importer is not loaded by the plugin bootstrap.\n" );
 	exit( 1 );
 }
 
-$template_position = strpos( $importer, "foreach ( $data['templates']" );
-$form_position     = strpos( $importer, "foreach ( $data['forms']" );
+$template_position = strpos( $importer, "foreach ( \$data['templates']" );
+$form_position     = strpos( $importer, "foreach ( \$data['forms']" );
 if ( false === $template_position || false === $form_position || $template_position >= $form_position ) {
 	fwrite( STDERR, "Templates must import before forms.\n" );
 	exit( 1 );
@@ -52,7 +52,7 @@ if ( false !== stripos( $importer, 'hosgedopol' ) ) {
 	exit( 1 );
 }
 
-if ( false === strpos( $importer, "$id = $post['id'];" ) ) {
+if ( false === strpos( $importer, "\$id = \$post['id'];" ) ) {
 	fwrite( STDERR, "Importer must resolve the numeric post ID before writing metadata.\n" );
 	exit( 1 );
 }
