@@ -87,6 +87,9 @@ jobs:
       - name: Run Services lifecycle hook registration test
         run: php tests/services-revalidation-hooks.php
 
+      - name: Run Mail capability/status contract test
+        run: php tests/mail-status-contract.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
