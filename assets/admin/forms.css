@@ -1,0 +1,427 @@
+.headless-forms-editor,
+.headless-mail-template-editor {
+  max-width: 1180px;
+}
+
+.headless-forms-editor .headless-directory-editor-grid,
+.headless-mail-template-editor .headless-directory-editor-grid {
+  gap: 20px;
+}
+
+.headless-forms-grid-2,
+.headless-forms-grid-3,
+.headless-forms-color-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.headless-forms-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.headless-forms-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.headless-forms-color-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.headless-forms-grid-2.is-tight {
+  gap: 10px;
+}
+
+.headless-forms-grid-2 > label,
+.headless-forms-grid-3 > label,
+.headless-forms-block-label,
+.headless-forms-condition select,
+.headless-forms-condition input {
+  min-width: 0;
+}
+
+.headless-forms-grid-2 > label,
+.headless-forms-grid-3 > label,
+.headless-forms-block-label,
+.headless-forms-color label {
+  display: grid;
+  gap: 7px;
+  color: #183f63;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.headless-forms-grid-2 label small,
+.headless-forms-grid-3 label small {
+  color: #7c8d9d;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.headless-forms-toggle-row {
+  display: grid;
+  gap: 7px;
+  padding: 14px 16px;
+  border: 1px solid rgba(7, 63, 115, .1);
+  border-radius: 13px;
+  background: #f8fbfe;
+}
+
+.headless-forms-toggle-row label {
+  color: #123f68;
+}
+
+.headless-forms-toggle-row p {
+  margin: 0;
+  color: #76899a;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.headless-forms-builder-section .headless-directory-section-heading {
+  align-items: center;
+}
+
+.headless-forms-builder {
+  display: grid;
+  gap: 12px;
+}
+
+.headless-forms-builder-card {
+  border: 1px solid rgba(7, 63, 115, .11);
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(0, 45, 88, .035);
+  overflow: hidden;
+}
+
+.headless-forms-builder-card > header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(7, 63, 115, .08);
+  background: #f7fafc;
+}
+
+.headless-forms-builder-card > header > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.headless-forms-builder-card > header strong {
+  color: #123f68;
+  font-size: 13px;
+}
+
+.headless-forms-builder-card > header small {
+  color: #8092a1;
+  font-size: 10.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.headless-forms-builder-card > .headless-forms-grid-2,
+.headless-forms-builder-card > .headless-forms-grid-3,
+.headless-forms-builder-card > .headless-forms-block-label,
+.headless-forms-builder-card > .headless-forms-checks,
+.headless-forms-builder-card > .headless-forms-advanced,
+.headless-forms-builder-card > .headless-forms-inline-check {
+  margin: 14px;
+}
+
+.headless-forms-drag {
+  color: #7c91a4;
+  cursor: grab;
+}
+
+.headless-forms-static-icon {
+  color: #1684ca;
+}
+
+.headless-forms-empty {
+  padding: 20px;
+  border: 1px dashed rgba(7, 63, 115, .18);
+  border-radius: 13px;
+  background: #fbfdff;
+  color: #718596;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.headless-forms-empty.is-compact {
+  padding: 12px;
+  text-align: left;
+}
+
+.headless-forms-sort-placeholder {
+  min-height: 90px;
+  border: 2px dashed rgba(22, 132, 202, .28);
+  border-radius: 15px;
+  background: rgba(22, 132, 202, .04);
+}
+
+.headless-forms-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  background: #f7fafc;
+}
+
+.headless-forms-checks label,
+.headless-forms-inline-check {
+  color: #506b82;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.headless-forms-advanced {
+  border-top: 1px solid rgba(7, 63, 115, .08);
+  padding-top: 12px;
+}
+
+.headless-forms-advanced > summary {
+  cursor: pointer;
+  color: #126fae;
+  font-size: 11.5px;
+  font-weight: 750;
+}
+
+.headless-forms-advanced[open] > summary {
+  margin-bottom: 14px;
+}
+
+.headless-forms-conditions-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(7, 63, 115, .08);
+}
+
+.headless-forms-conditions-head strong {
+  margin-right: auto;
+  color: #123f68;
+  font-size: 12px;
+}
+
+.headless-forms-conditions-head label {
+  color: #657d91;
+  font-size: 11px;
+}
+
+.headless-forms-conditions {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.headless-forms-condition {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, .75fr) minmax(140px, 1fr) 28px;
+  gap: 8px;
+  align-items: center;
+}
+
+.headless-forms-condition select,
+.headless-forms-condition input {
+  width: 100%;
+}
+
+.headless-forms-condition .button-link-delete {
+  text-decoration: none;
+  font-size: 20px;
+}
+
+.headless-forms-mode-switch {
+  display: inline-flex;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid #d7e1e9;
+  border-radius: 12px;
+  background: #f7fafc;
+}
+
+.headless-forms-mode-switch label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #526f87;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.headless-forms-media-row {
+  display: flex;
+  gap: 8px;
+}
+
+.headless-forms-media-row .widefat {
+  flex: 1;
+}
+
+.headless-forms-color > div {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 7px;
+}
+
+.headless-forms-color input[type="color"] {
+  width: 38px;
+  height: 34px;
+  padding: 2px;
+  border: 1px solid #d7e1e9;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.headless-forms-token-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+
+.headless-forms-token-list code {
+  padding: 5px 8px;
+  border: 1px solid rgba(7, 63, 115, .1);
+  border-radius: 7px;
+  background: #f6f9fc;
+  color: #126fae;
+  font-size: 10.5px;
+}
+
+.headless-forms-code {
+  min-height: 320px;
+  padding: 14px !important;
+  border-radius: 11px !important;
+  background: #0f2233 !important;
+  color: #e9f2f8 !important;
+  font-family: Consolas, Monaco, monospace !important;
+  font-size: 12px !important;
+  line-height: 1.65 !important;
+  tab-size: 2;
+}
+
+.headless-forms-template-preview {
+  min-height: 180px;
+  overflow: hidden;
+  border: 1px solid rgba(7, 63, 115, .1);
+  border-radius: 14px;
+  background: #f5f8fb;
+}
+
+.headless-forms-email-canvas {
+  padding: 28px;
+}
+
+.headless-forms-email-card {
+  max-width: 640px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid #e3eaf0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(0, 45, 88, .06);
+}
+
+.headless-forms-email-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  color: #fff;
+}
+
+.headless-forms-email-header > div {
+  display: grid;
+  gap: 5px;
+}
+
+.headless-forms-email-header small {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .82;
+}
+
+.headless-forms-email-header strong {
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.headless-forms-email-header img {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+}
+
+.headless-forms-email-body {
+  padding: 22px 24px;
+}
+
+.headless-forms-email-body > p {
+  margin: 0 0 14px;
+  color: #5d7285;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.headless-forms-email-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 12px;
+  padding: 9px 8px;
+  border-bottom: 1px solid;
+  font-size: 11.5px;
+}
+
+.headless-forms-email-footer {
+  padding: 0 24px 20px;
+  color: #7d8d9c;
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1100px) {
+  .headless-forms-color-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 782px) {
+  .headless-forms-grid-2,
+  .headless-forms-grid-3,
+  .headless-forms-color-grid,
+  .headless-forms-condition {
+    grid-template-columns: 1fr;
+  }
+
+  .headless-forms-conditions-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .headless-forms-media-row {
+    flex-direction: column;
+  }
+
+  .headless-forms-email-canvas {
+    padding: 14px;
+  }
+
+  .headless-forms-email-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
