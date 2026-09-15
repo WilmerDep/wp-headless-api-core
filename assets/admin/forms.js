@@ -108,10 +108,14 @@
   var fieldsState = stateFor('fields');
   var notificationsState = stateFor('notifications');
 
+  function sectionDisplayName(section) {
+    return section.title || section.eyebrow || section.id || (strings.untitledSection || 'Nueva sección');
+  }
+
   function sectionOptions(selected) {
     var html = '<option value="">' + esc(strings.noSection || 'Sin sección') + '</option>';
     sectionsState.items.forEach(function (section) {
-      html += '<option value="' + esc(section.id) + '"' + (section.id === selected ? ' selected' : '') + '>' + esc(section.title || section.id) + '</option>';
+      html += '<option value="' + esc(section.id) + '"' + (section.id === selected ? ' selected' : '') + '>' + esc(sectionDisplayName(section)) + '</option>';
     });
     return html;
   }
@@ -157,9 +161,9 @@
   sectionsState.items = sectionsState.items.map(function (section, index) {
     section = section && typeof section === 'object' ? section : {};
     section.id = section.id || ('section-' + (index + 1));
-    section.eyebrow = section.eyebrow || '';
-    section.title = section.title || (strings.untitledSection || 'Nueva sección');
-    section.description = section.description || '';
+    section.eyebrow = typeof section.eyebrow === 'string' ? section.eyebrow : '';
+    section.title = typeof section.title === 'string' ? section.title : '';
+    section.description = typeof section.description === 'string' ? section.description : '';
     return section;
   });
   fieldsState.items = fieldsState.items.map(ensureFieldShape);
@@ -187,10 +191,10 @@
     }
     var html = sectionsState.items.map(function (section, index) {
       return '<article class="headless-forms-builder-card" data-kind="section" data-index="' + index + '">' +
-        '<header><span class="dashicons dashicons-menu headless-forms-drag" aria-hidden="true"></span><div><strong>' + esc(section.title || section.id) + '</strong><small>' + esc(section.id) + '</small></div><button type="button" class="button-link-delete" data-forms-remove>Quitar</button></header>' +
+        '<header><span class="dashicons dashicons-menu headless-forms-drag" aria-hidden="true"></span><div><strong>' + esc(sectionDisplayName(section)) + '</strong><small>' + esc(section.id) + '</small></div><button type="button" class="button-link-delete" data-forms-remove>Quitar</button></header>' +
         '<div class="headless-forms-grid-3">' +
           '<label>ID<input class="widefat" data-prop="id" value="' + esc(section.id) + '"></label>' +
-          '<label>Eyebrow<input class="widefat" data-prop="eyebrow" value="' + esc(section.eyebrow) + '" placeholder="PASO 1"></label>' +
+          '<label>Subtítulo<input class="widefat" data-prop="eyebrow" value="' + esc(section.eyebrow) + '" placeholder="PASO 1"></label>' +
           '<label>Título<input class="widefat" data-prop="title" value="' + esc(section.title) + '"></label>' +
         '</div>' +
         '<label class="headless-forms-block-label">Descripción<textarea class="widefat" rows="2" data-prop="description">' + esc(section.description) + '</textarea></label>' +
@@ -247,7 +251,7 @@
           '<label>Placeholder<input class="widefat" data-prop="placeholder" value="' + esc(field.placeholder) + '"></label>' +
           '<label>Ayuda<input class="widefat" data-prop="helper" value="' + esc(field.helper) + '"></label>' +
           '<label>Valor por defecto<input class="widefat" data-prop="defaultValue" value="' + esc(field.defaultValue) + '"></label>' +
-          '<label>Componente Consumer<input class="widefat" data-ui-prop="component" value="' + esc(ui.component || '') + '" placeholder="international-phone"></label>' +
+          '<label>Componente Consumer <small>Opcional</small><input class="widefat" data-ui-prop="component" value="' + esc(ui.component || '') + '" placeholder="Ej.: international-phone"></label>' +
         '</div>' +
         '<div class="headless-forms-checks">' +
           '<label><input type="checkbox" data-prop="required"' + (field.required ? ' checked' : '') + '> Obligatorio</label>' +
@@ -368,7 +372,7 @@
     item[prop] = $(this).val();
     if (prop === 'id') item.id = slug(item.id, 'section');
     sync();
-    if (prop === 'id' || prop === 'title') renderFields();
+    if (prop === 'id' || prop === 'title' || prop === 'eyebrow') renderFields();
   });
 
   $(document).on('input change', '[data-kind="field"] [data-prop]', function () {
