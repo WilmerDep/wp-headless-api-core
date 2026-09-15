@@ -111,6 +111,9 @@ jobs:
       - name: Run Forms blank section title regression test
         run: php tests/forms-section-title-contract.php
 
+      - name: Run Forms plain-language editorial UX contract test
+        run: php tests/forms-editorial-ux-contract.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
