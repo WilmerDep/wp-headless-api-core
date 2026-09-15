@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "package": {
+    "name": "HOSGEDOPOL · Forms + Mail Templates",
+    "version": "1.0.0"
+  },
+  "templates": [
+    {
+      "slug": "hosgedopol-contacto",
+      "title": "HOSGEDOPOL · Contacto",
+      "status": "publish",
+      "mode": "visual",
+      "subject": "Nuevo mensaje de contacto — {{field.fullName}}",
+      "preheader": "Nuevo mensaje recibido desde el formulario de contacto.",
+      "visual": {
+        "logoUrl": "",
+        "outerBackground": "#f5f8fb",
+        "headerBackground": "#06477f",
+        "labelColor": "#123f68",
+        "valueColor": "#344f67",
+        "separatorColor": "#e8eef3",
+        "eyebrow": "HOSGEDOPOL · Contacto",
+        "heading": "Nuevo mensaje de contacto",
+        "intro": "",
+        "footer": ""
+      },
+      "textFallback": "Nuevo mensaje de contacto\n\n{{form.fields}}"
+    },
+    {
+      "slug": "hosgedopol-citas-en-linea",
+      "title": "HOSGEDOPOL · Citas en Línea",
+      "status": "publish",
+      "mode": "visual",
+      "subject": "Nueva solicitud de cita — {{field.firstName}} {{field.lastName}}",
+      "preheader": "Nueva solicitud recibida desde Citas en Línea.",
+      "visual": {
+        "logoUrl": "",
+        "outerBackground": "#f5f8fb",
+        "headerBackground": "#06477f",
+        "labelColor": "#123f68",
+        "valueColor": "#344f67",
+        "separatorColor": "#e8eef3",
+        "eyebrow": "HOSGEDOPOL · Citas en Línea",
+        "heading": "Nueva solicitud de cita",
+        "intro": "",
+        "footer": ""
+      },
+      "textFallback": "Nueva solicitud de cita\n\n{{form.fields}}"
+    }
+  ],
+  "forms": [
+    {
+      "slug": "contacto",
+      "title": "Contacto",
+      "status": "publish",
+      "enabled": true,
+      "description": "Formulario institucional de contacto.",
+      "submitLabel": "Enviar mensaje",
+      "successMessage": "Tu mensaje fue enviado correctamente.",
+      "errorMessage": "No pudimos enviar el mensaje. Inténtalo nuevamente en unos minutos.",
+      "sections": [
+        {"id":"contacto","eyebrow":"CONTACTO","title":"Envíanos un mensaje","description":"","order":0}
+      ],
+      "fields": [
+        {"id":"fullName","name":"fullName","type":"text","label":"Nombre completo","placeholder":"Nombre completo","required":true,"section":"contacto","order":0,"width":6,"autocomplete":"name","validation":{"minLength":2,"maxLength":120,"pattern":"name"}},
+        {"id":"email","name":"email","type":"email","label":"Correo electrónico","placeholder":"correo@ejemplo.com","required":true,"section":"contacto","order":1,"width":6,"autocomplete":"email","validation":{"maxLength":160}},
+        {"id":"subject","name":"subject","type":"text","label":"Asunto","placeholder":"Asunto","required":true,"section":"contacto","order":2,"width":12,"validation":{"minLength":3,"maxLength":160,"safeText":true}},
+        {"id":"message","name":"message","type":"textarea","label":"Mensaje","placeholder":"Escribe tu mensaje","required":true,"section":"contacto","order":3,"width":12,"validation":{"minLength":8,"maxLength":1800,"safeText":true}}
+      ],
+      "notifications": [
+        {"id":"contacto-interno","enabled":true,"template":"hosgedopol-contacto","to":["info@hosgedopol.gob.do"],"cc":[],"bcc":[],"replyToField":"email","subject":"Nuevo mensaje de contacto — {{field.fullName}}"}
+      ],
+      "antiSpam": {"honeypot":true,"honeypotField":"website","maxPayload":65536},
+      "rateLimit": {"enabled":true,"max":5,"window":900}
+    },
+    {
+      "slug": "cita-medica",
+      "title": "Citas en Línea",
+      "status": "publish",
+      "enabled": true,
+      "description": "Solicitud institucional de cita médica.",
+      "submitLabel": "Enviar solicitud",
+      "successMessage": "Tu solicitud fue enviada correctamente.",
+      "errorMessage": "No pudimos enviar la solicitud. Inténtalo nuevamente.",
+      "sections": [
+        {"id":"datos-generales","eyebrow":"PASO 1","title":"Datos generales del solicitante","description":"","order":0},
+        {"id":"residencia","eyebrow":"PASO 2","title":"Datos de residencia","description":"","order":1},
+        {"id":"asegurador","eyebrow":"PASO 3","title":"Datos del asegurador","description":"","order":2},
+        {"id":"especialidad","eyebrow":"PASO 4","title":"Especialidad a consultar","description":"","order":3},
+        {"id":"otros","eyebrow":"PASO 5","title":"Otros datos","description":"","order":4}
+      ],
+      "fields": [
+        {"id":"firstName","name":"firstName","type":"text","label":"Nombre(s)","placeholder":"Nombre(s)","required":true,"section":"datos-generales","order":0,"width":6,"autocomplete":"given-name","validation":{"minLength":2,"maxLength":80,"pattern":"name","safeText":true}},
+        {"id":"lastName","name":"lastName","type":"text","label":"Apellido(s)","placeholder":"Apellido(s)","required":true,"section":"datos-generales","order":1,"width":6,"autocomplete":"family-name","validation":{"minLength":2,"maxLength":80,"pattern":"name","safeText":true}},
+        {"id":"sex","name":"sex","type":"radio","label":"Sexo","required":true,"section":"datos-generales","order":2,"width":6,"defaultValue":"femenino","options":[{"value":"femenino","label":"Femenino"},{"value":"masculino","label":"Masculino"}]},
+        {"id":"documentType","name":"documentType","type":"radio","label":"Tipo de documento","required":true,"section":"datos-generales","order":3,"width":6,"defaultValue":"cedula","options":[{"value":"cedula","label":"Cédula"},{"value":"pasaporte","label":"Pasaporte"}]},
+        {"id":"civilStatus","name":"civilStatus","type":"select","label":"Estado civil","required":true,"section":"datos-generales","order":4,"width":6,"options":[{"value":"soltero","label":"Soltero/a"},{"value":"casado","label":"Casado/a"},{"value":"union-libre","label":"Unión libre"}]},
+        {"id":"document","name":"document","type":"text","label":"Documento","required":true,"section":"datos-generales","order":5,"width":6,"validation":{"minLength":3,"maxLength":30,"pattern":"document"},"ui":["document-by-type"]},
+        {"id":"birthDate","name":"birthDate","type":"date","label":"Fecha de nacimiento","required":true,"section":"datos-generales","order":6,"width":6,"validation":{"pastOnly":true},"ui":["birth-date"]},
+        {"id":"nationality","name":"nationality","type":"select","label":"Nacionalidad","required":true,"section":"datos-generales","order":7,"width":6,"defaultValue":"dominicano-a","ui":["searchable","consumer-options:nationality"]},
+        {"id":"province","name":"province","type":"select","label":"Provincia","required":true,"section":"residencia","order":8,"width":4,"ui":["searchable","consumer-options:province"]},
+        {"id":"sector","name":"sector","type":"text","label":"Sector","placeholder":"Ej.: Ensanche Espaillat","required":true,"section":"residencia","order":9,"width":4,"autocomplete":"address-level3","validation":{"maxLength":160,"safeText":true}},
+        {"id":"address","name":"address","type":"text","label":"Dirección","placeholder":"Calle, número y referencia","required":true,"section":"residencia","order":10,"width":4,"autocomplete":"street-address","validation":{"maxLength":240,"safeText":true}},
+        {"id":"phone","name":"phone","type":"tel","label":"Teléfono","required":true,"section":"residencia","order":11,"width":4,"validation":{"minLength":6,"maxLength":32},"ui":["international-phone"]},
+        {"id":"phoneCountry","name":"phoneCountry","type":"hidden","label":"País del teléfono","required":false,"section":"residencia","order":12,"width":12,"hidden":true},
+        {"id":"phoneDialCode","name":"phoneDialCode","type":"hidden","label":"Prefijo del teléfono","required":false,"section":"residencia","order":13,"width":12,"hidden":true},
+        {"id":"mobile","name":"mobile","type":"tel","label":"Celular","required":true,"section":"residencia","order":14,"width":4,"validation":{"minLength":6,"maxLength":32},"ui":["international-phone"]},
+        {"id":"mobileCountry","name":"mobileCountry","type":"hidden","label":"País del celular","required":false,"section":"residencia","order":15,"width":12,"hidden":true},
+        {"id":"mobileDialCode","name":"mobileDialCode","type":"hidden","label":"Prefijo del celular","required":false,"section":"residencia","order":16,"width":12,"hidden":true},
+        {"id":"email","name":"email","type":"email","label":"Correo electrónico","placeholder":"solicitante@gmail.com","required":true,"section":"residencia","order":17,"width":4,"autocomplete":"email","validation":{"maxLength":160}},
+        {"id":"insurer","name":"insurer","type":"select","label":"Asegurador","required":true,"section":"asegurador","order":18,"width":6,"ui":["searchable","consumer-options:insurer"]},
+        {"id":"nss","name":"nss","type":"text","label":"NSS","placeholder":"Indica tu NSS","required":true,"section":"asegurador","order":19,"width":6,"validation":{"minLength":11,"maxLength":11,"pattern":"digits"}},
+        {"id":"service","name":"service","type":"select","label":"Especialidad","required":true,"section":"especialidad","order":20,"width":4,"ui":["searchable","consumer-options:medical-directory"]},
+        {"id":"shift","name":"shift","type":"select","label":"Tanda","required":true,"section":"especialidad","order":21,"width":4,"ui":["consumer-options:shift"]},
+        {"id":"appointmentDate","name":"appointmentDate","type":"date","label":"Fecha","required":true,"section":"especialidad","order":22,"width":4,"validation":{"futureOnly":true},"ui":["appointment-date"]},
+        {"id":"specialtySubtype","name":"specialtySubtype","type":"select","label":"Subespecialidad","required":false,"section":"especialidad","order":23,"width":6,"ui":["consumer-options:medical-directory","conditional-by-service"]},
+        {"id":"doctor","name":"doctor","type":"select","label":"Médico","required":false,"section":"especialidad","order":24,"width":6,"ui":["consumer-options:medical-directory","conditional-by-service"]},
+        {"id":"rankStatus","name":"rankStatus","type":"select","label":"Rango o estatus","required":true,"section":"otros","order":25,"width":12,"ui":["searchable","consumer-options:rank-status"]},
+        {"id":"message","name":"message","type":"textarea","label":"Observaciones","placeholder":"Escribe aquí cualquier información adicional relevante para tu solicitud.","required":false,"section":"otros","order":26,"width":12,"validation":{"maxLength":1800,"maxWords":150,"safeText":true}},
+        {"id":"experienceRating","name":"experienceRating","type":"rating","label":"¿Qué te pareció la experiencia?","required":false,"section":"otros","order":27,"width":12,"defaultValue":"0","validation":{"min":0,"max":5}}
+      ],
+      "notifications": [
+        {"id":"citas-interno","enabled":true,"template":"hosgedopol-citas-en-linea","to":["citas@hosgedopol.gob.do"],"cc":[],"bcc":[],"replyToField":"email","subject":"Nueva solicitud de cita — {{field.firstName}} {{field.lastName}}"}
+      ],
+      "antiSpam": {"honeypot":true,"honeypotField":"website","maxPayload":65536},
+      "rateLimit": {"enabled":true,"max":5,"window":900}
+    }
+  ]
+}
