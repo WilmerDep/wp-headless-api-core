@@ -60,6 +60,7 @@ final class Forms_Compatibility {
 					$this->repair_one( (int) $post_id, $meta_key, $value );
 				}
 			}
+		}
 
 		update_option( self::MIGRATION_OPTION, HEADLESS_API_CORE_VERSION, false );
 	}
