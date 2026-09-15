@@ -45,7 +45,7 @@ final class Forms_Submission {
 			return new WP_Error( 'payload_too_large', __( 'The submitted form is too large.', 'wp-headless-api-core' ), array( 'status' => 413 ) );
 		}
 
-		$honeypot = isset( $anti_spam['honeypotField'] ) ? sanitize_key( $anti_spam['honeypotField'] ) : 'website';
+		$honeypot = isset( $anti_spam['honeypotField'] ) ? Forms_Schema::sanitize_field_name( $anti_spam['honeypotField'] ) : 'website';
 		if ( ! empty( $anti_spam['honeypot'] ) && isset( $payload[ $honeypot ] ) && '' !== trim( (string) $payload[ $honeypot ] ) ) {
 			return array( 'ok' => true, 'discarded' => true );
 		}
@@ -122,7 +122,7 @@ final class Forms_Submission {
 		$headers   = array( 'Content-Type: text/html; charset=UTF-8' );
 		$cc        = $this->resolve_recipients( $notification['cc'], $values );
 		$bcc       = $this->resolve_recipients( $notification['bcc'], $values );
-		$reply_key = isset( $notification['replyToField'] ) ? sanitize_key( $notification['replyToField'] ) : '';
+		$reply_key = isset( $notification['replyToField'] ) ? Forms_Schema::sanitize_field_name( $notification['replyToField'] ) : '';
 
 		foreach ( $cc as $email ) {
 			$headers[] = 'Cc: ' . $email;
@@ -156,9 +156,9 @@ final class Forms_Submission {
 				$out[] = sanitize_email( $recipient );
 				continue;
 			}
-			if ( preg_match( '/^\{\{field\.([A-Za-z0-9_-]+)\}\}$/', $recipient, $matches ) ) {
-				$key = sanitize_key( $matches[1] );
-				if ( isset( $values[ $key ] ) && is_email( $values[ $key ] ) ) {
+			if ( preg_match( '/^\{\{field\.([A-Za-z][A-Za-z0-9_-]*)\}\}$/', $recipient, $matches ) ) {
+				$key = Forms_Schema::sanitize_field_name( $matches[1] );
+				if ( $key && isset( $values[ $key ] ) && is_email( $values[ $key ] ) ) {
 					$out[] = sanitize_email( $values[ $key ] );
 				}
 			}
