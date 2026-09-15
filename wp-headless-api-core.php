@@ -30,6 +30,7 @@ require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Submission.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Serializer.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Controller.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Admin.php';
+require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Package_Importer.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Module.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/News/News_Serializer.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/News/News_Controller.php';
