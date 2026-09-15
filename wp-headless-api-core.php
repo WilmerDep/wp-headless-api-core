@@ -25,6 +25,7 @@ require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Schema.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Post_Type.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Validator.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Mail_Template_Renderer.php';
+require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Mail_Template_Test.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Submission.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Serializer.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Controller.php';
