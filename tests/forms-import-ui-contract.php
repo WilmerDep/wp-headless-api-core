@@ -51,8 +51,8 @@ if ( false === strpos( $plugin, 'modules/Forms/Forms_Import_UI.php' ) ) {
 	exit( 1 );
 }
 
-if ( false === strpos( $plugin, 'Version: 0.7.3' ) || false === strpos( $plugin, "HEADLESS_API_CORE_VERSION', '0.7.3" ) ) {
-	fwrite( STDERR, "Plugin version must be 0.7.3 for the importer visual gate.\n" );
+if ( false === strpos( $plugin, 'Version: 0.7.4' ) || false === strpos( $plugin, "HEADLESS_API_CORE_VERSION', '0.7.4" ) ) {
+	fwrite( STDERR, "Plugin version must be 0.7.4 for the current Forms visual gate.\n" );
 	exit( 1 );
 }
 
