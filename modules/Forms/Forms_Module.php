@@ -35,6 +35,7 @@ final class Forms_Module {
 		$submission    = new Forms_Submission( $mail_settings, $validator, $renderer );
 		$controller    = new Forms_Controller( $serializer, $submission );
 		$admin         = new Forms_Admin();
+		$compatibility = new Forms_Compatibility();
 		$importer      = new Forms_Package_Importer();
 		$import_ui     = new Forms_Import_UI();
 
@@ -42,6 +43,7 @@ final class Forms_Module {
 		$controller->register();
 		$admin->register();
 		$template_test->register();
+		$compatibility->register();
 		$importer->register();
 		$import_ui->register();
 	}
