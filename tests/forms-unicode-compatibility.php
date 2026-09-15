@@ -18,7 +18,9 @@ foreach (
 		'JSON_UNESCAPED_UNICODE',
 		'wp_slash( $canonical )',
 		"'Subtítulo'",
-		'/u00([0-9a-fA-F]{2})/',
+		'/u([0-9a-fA-F]{4})/',
+		'/u(d[89ab][0-9a-f]{2})u(d[cdef][0-9a-f]{2})/i',
+		'headless_api_core_forms_json_unicode_v076',
 	) as $needle
 ) {
 	if ( false === strpos( $compat, $needle ) ) {
@@ -39,8 +41,8 @@ if ( false === strpos( $plugin, 'modules/Forms/Forms_Compatibility.php' ) ) {
 
 preg_match( '/\* Version:\s*([0-9.]+)/', $plugin, $version_match );
 $version = isset( $version_match[1] ) ? $version_match[1] : '';
-if ( '' === $version || version_compare( $version, '0.7.4', '<' ) ) {
-	fwrite( STDERR, "Forms unicode compatibility requires plugin version 0.7.4 or newer.\n" );
+if ( '' === $version || version_compare( $version, '0.7.6', '<' ) ) {
+	fwrite( STDERR, "Forms unicode compatibility requires plugin version 0.7.6 or newer.\n" );
 	exit( 1 );
 }
 
