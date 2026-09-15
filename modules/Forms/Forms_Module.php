@@ -36,11 +36,13 @@ final class Forms_Module {
 		$controller    = new Forms_Controller( $serializer, $submission );
 		$admin         = new Forms_Admin();
 		$importer      = new Forms_Package_Importer();
+		$import_ui     = new Forms_Import_UI();
 
 		$post_type->register();
 		$controller->register();
 		$admin->register();
 		$template_test->register();
 		$importer->register();
+		$import_ui->register();
 	}
 }
