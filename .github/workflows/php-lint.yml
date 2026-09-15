@@ -99,6 +99,9 @@ jobs:
       - name: Run Forms post type/admin menu contract test
         run: php tests/forms-post-types-contract.php
 
+      - name: Run Forms package importer contract test
+        run: php tests/forms-package-importer-contract.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
