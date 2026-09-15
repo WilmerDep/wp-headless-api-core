@@ -72,6 +72,7 @@ final class Mail_Template_Test {
 		);
 		$is_ready   = $this->mail_settings->is_ready();
 		$is_publish = 'publish' === $post->post_status;
+		$is_disabled = ! $is_ready || ! $is_publish;
 		?>
 		<p><?php esc_html_e( 'Envía la versión guardada de esta plantilla usando datos de ejemplo. No expone ni modifica las credenciales SMTP.', 'wp-headless-api-core' ); ?></p>
 		<?php if ( ! $is_publish ) : ?>
@@ -97,7 +98,7 @@ final class Mail_Template_Test {
 					<?php endforeach; ?>
 				</select>
 			</p>
-			<?php submit_button( __( 'Enviar prueba', 'wp-headless-api-core' ), 'secondary', 'submit', false, array( 'disabled' => ( ! $is_ready || ! $is_publish ) ? 'disabled' : false ) ); ?>
+			<p><button type="submit" class="button button-secondary" <?php disabled( $is_disabled ); ?>><?php esc_html_e( 'Enviar prueba', 'wp-headless-api-core' ); ?></button></p>
 		</form>
 		<?php
 	}
@@ -106,7 +107,11 @@ final class Mail_Template_Test {
 	public function handle() {
 		$template_id = isset( $_POST['template_id'] ) ? absint( wp_unslash( $_POST['template_id'] ) ) : 0;
 		if ( ! $template_id || ! current_user_can( 'edit_post', $template_id ) ) {
-			wp_die( esc_html__( 'No tienes permiso para probar esta plantilla.', 'wp-headless-api-core' ), 403 );
+			wp_die(
+				esc_html__( 'No tienes permiso para probar esta plantilla.', 'wp-headless-api-core' ),
+				'',
+				array( 'response' => 403 )
+			);
 		}
 
 		check_admin_referer( self::NONCE_ACTION, self::NONCE_NAME );
@@ -239,25 +244,25 @@ final class Mail_Template_Test {
 
 		$semantic = strtolower( $name );
 		$known    = array(
-			'fullname'        => 'Ana Pérez',
-			'firstname'       => 'Ana',
-			'lastname'        => 'Pérez',
-			'email'           => 'ana.perez@example.org',
-			'subject'         => __( 'Consulta de prueba', 'wp-headless-api-core' ),
-			'message'         => __( 'Este es un mensaje de prueba generado por Forms Core.', 'wp-headless-api-core' ),
-			'phone'           => '+1 809 555 0101',
-			'mobile'          => '+1 829 555 0102',
-			'document'        => '001-0000000-1',
-			'nss'             => '12345678901',
-			'address'         => 'Dirección de ejemplo 123',
-			'sector'          => 'Sector de ejemplo',
-			'province'        => 'distrito-nacional',
-			'service'         => 'servicio-ejemplo',
-			'specialtysubtype'=> 'subtipo-ejemplo',
-			'doctor'          => 'medico-ejemplo',
-			'shift'           => 'manana',
-			'rankstatus'      => 'civil',
-			'experiencerating'=> 5,
+			'fullname'         => 'Ana Pérez',
+			'firstname'        => 'Ana',
+			'lastname'         => 'Pérez',
+			'email'            => 'ana.perez@example.org',
+			'subject'          => __( 'Consulta de prueba', 'wp-headless-api-core' ),
+			'message'          => __( 'Este es un mensaje de prueba generado por Forms Core.', 'wp-headless-api-core' ),
+			'phone'            => '+1 809 555 0101',
+			'mobile'           => '+1 829 555 0102',
+			'document'         => '001-0000000-1',
+			'nss'              => '12345678901',
+			'address'          => 'Dirección de ejemplo 123',
+			'sector'           => 'Sector de ejemplo',
+			'province'         => 'distrito-nacional',
+			'service'          => 'servicio-ejemplo',
+			'specialtysubtype' => 'subtipo-ejemplo',
+			'doctor'           => 'medico-ejemplo',
+			'shift'            => 'manana',
+			'rankstatus'       => 'civil',
+			'experiencerating' => 5,
 		);
 		if ( array_key_exists( $semantic, $known ) ) {
 			return $known[ $semantic ];
@@ -296,7 +301,12 @@ final class Mail_Template_Test {
 			),
 			60
 		);
-		wp_safe_redirect( get_edit_post_link( $template_id, 'raw' ) );
+
+		$redirect = get_edit_post_link( $template_id, 'raw' );
+		if ( ! $redirect ) {
+			$redirect = admin_url( 'edit.php?post_type=' . Forms_Post_Type::TEMPLATE_POST_TYPE );
+		}
+		wp_safe_redirect( $redirect );
 		exit;
 	}
 }
