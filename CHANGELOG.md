@@ -6,6 +6,29 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Mail / SMTP Core v0.6.1
+
+#### Added
+
+- Public read-only `GET /wp-json/headless-core/v1/mail/status` capability endpoint for headless Consumers.
+- Provider-agnostic Mail capability methods: `is_enabled()`, `is_configured()`, `is_ready()`, `get_last_test()` and `public_status()`.
+- Safe persisted last SMTP test result containing only success state and UTC timestamp.
+- Explicit `schemaVersion`, stable status enum and `capabilities.send` in the public contract.
+- Isolated regression coverage for disabled/incomplete/ready states, secret redaction, route stability and no-store cache policy.
+- Dedicated Mail Core documentation in `docs/MAIL.md`.
+
+#### Changed
+
+- SMTP test results now persist a safe transport-health snapshot for Consumers and future Forms Core integration.
+- Invalid test-recipient input no longer marks the SMTP transport itself as failed.
+- Password helper copy now makes explicit that an already stored password remains saved when the field is left blank.
+- Plugin version bumped to `0.6.1`.
+
+#### Security
+
+- `/mail/status` deliberately excludes SMTP host, port, username, password, sender identity, recipient and raw SMTP errors.
+- Consumer applications can determine mail capability without receiving SMTP credentials.
+
 ### Hero v0.3.4 candidate
 
 #### Added
