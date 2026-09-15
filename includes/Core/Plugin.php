@@ -9,6 +9,7 @@ namespace HeadlessApiCore\Core;
 
 use HeadlessApiCore\Modules\Directory\Directory_Module;
 use HeadlessApiCore\Modules\Hero\Hero_Module;
+use HeadlessApiCore\Modules\Mail\Mail_Module;
 use HeadlessApiCore\Modules\News\News_Module;
 use HeadlessApiCore\Modules\Services\Services_Module;
 use HeadlessApiCore\Rest\Health_Controller;
@@ -39,6 +40,7 @@ final class Plugin {
 		$health_controller = new Health_Controller();
 		$health_controller->register();
 
+		Mail_Module::boot();
 		News_Module::boot();
 		Hero_Module::boot();
 		Directory_Module::boot();
