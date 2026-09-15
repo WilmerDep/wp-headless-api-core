@@ -71,7 +71,11 @@ final class Forms_Submission {
 			return ! empty( $item['enabled'] );
 		} ) );
 
-		if ( ! empty( $active_notifications ) && ! $this->mail_settings->is_ready() ) {
+		if ( ! $this->notifications_configured( $active_notifications ) ) {
+			return new WP_Error( 'form_unconfigured', __( 'This form is not configured for delivery yet.', 'wp-headless-api-core' ), array( 'status' => 503 ) );
+		}
+
+		if ( ! $this->mail_settings->is_ready() ) {
 			return new WP_Error( 'mail_unavailable', __( 'The delivery service is temporarily unavailable.', 'wp-headless-api-core' ), array( 'status' => 503 ) );
 		}
 
@@ -99,6 +103,23 @@ final class Forms_Submission {
 			'submissionId' => $submission_id,
 			'message'      => (string) get_post_meta( $post->ID, Forms_Post_Type::META_SUCCESS_MESSAGE, true ),
 		);
+	}
+
+	/** Ensure every active notification has a recipient and published template before sending anything. */
+	private function notifications_configured( array $notifications ) {
+		if ( empty( $notifications ) ) {
+			return false;
+		}
+		foreach ( $notifications as $notification ) {
+			if ( empty( $notification['to'] ) || empty( $notification['template'] ) ) {
+				return false;
+			}
+			$template = get_page_by_path( $notification['template'], OBJECT, Forms_Post_Type::TEMPLATE_POST_TYPE );
+			if ( ! $template || 'publish' !== $template->post_status ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/** Send one normalized notification through wp_mail()/Mail Core. */
