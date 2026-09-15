@@ -93,6 +93,9 @@ jobs:
       - name: Run Forms schema and validation contract test
         run: php tests/forms-schema-validation.php
 
+      - name: Run Forms mail workflow and fixture contract test
+        run: php tests/forms-mail-workflow-contract.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
