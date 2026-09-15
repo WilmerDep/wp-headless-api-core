@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class Forms_Post_Type {
 	const FORM_POST_TYPE     = 'headless_form';
-	const TEMPLATE_POST_TYPE = 'headless_mail_template';
+	const TEMPLATE_POST_TYPE = 'headless_mail_tpl';
 
 	const META_DESCRIPTION      = '_headless_form_description';
 	const META_ENABLED          = '_headless_form_enabled';
