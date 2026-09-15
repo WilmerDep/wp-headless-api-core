@@ -57,4 +57,34 @@ if ( false === strpos( $importer, "\$id = \$post['id'];" ) ) {
 	exit( 1 );
 }
 
+$fixture_path = $root . '/project-docs/forms/hosgedopol-package-v1.json';
+$fixture      = json_decode( file_get_contents( $fixture_path ), true );
+if ( ! is_array( $fixture ) || JSON_ERROR_NONE !== json_last_error() ) {
+	fwrite( STDERR, "HOSGEDOPOL package fixture is not valid JSON.\n" );
+	exit( 1 );
+}
+if ( 1 !== ( $fixture['schemaVersion'] ?? null ) ) {
+	fwrite( STDERR, "HOSGEDOPOL package fixture must use schemaVersion 1.\n" );
+	exit( 1 );
+}
+if ( 2 !== count( $fixture['templates'] ?? array() ) || 2 !== count( $fixture['forms'] ?? array() ) ) {
+	fwrite( STDERR, "HOSGEDOPOL package fixture must contain two templates and two forms.\n" );
+	exit( 1 );
+}
+
+$template_slugs = array_column( $fixture['templates'], 'slug' );
+$form_slugs     = array_column( $fixture['forms'], 'slug' );
+foreach ( array( 'hosgedopol-contacto', 'hosgedopol-citas-en-linea' ) as $slug ) {
+	if ( ! in_array( $slug, $template_slugs, true ) ) {
+		fwrite( STDERR, "HOSGEDOPOL package missing template: {$slug}\n" );
+		exit( 1 );
+	}
+}
+foreach ( array( 'contacto', 'cita-medica' ) as $slug ) {
+	if ( ! in_array( $slug, $form_slugs, true ) ) {
+		fwrite( STDERR, "HOSGEDOPOL package missing form: {$slug}\n" );
+		exit( 1 );
+	}
+}
+
 echo "Forms package importer contract test passed.\n";
