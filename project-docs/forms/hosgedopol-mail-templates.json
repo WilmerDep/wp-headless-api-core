@@ -1,0 +1,50 @@
+{
+  "fixtureVersion": 1,
+  "scope": "project-only",
+  "note": "HOSGEDOPOL compatibility fixtures. project-docs is excluded from the distributable plugin package; runtime core remains institution-agnostic.",
+  "templates": [
+    {
+      "slug": "hosgedopol-contacto",
+      "title": "HOSGEDOPOL · Contacto",
+      "status": "publish",
+      "mode": "visual",
+      "subject": "Nuevo mensaje de contacto — {{field.fullName}}",
+      "preheader": "Nuevo mensaje recibido desde el formulario de contacto.",
+      "visual": {
+        "logoUrl": "",
+        "outerBackground": "#f5f8fb",
+        "headerBackground": "#06477f",
+        "labelColor": "#123f68",
+        "valueColor": "#344f67",
+        "separatorColor": "#e8eef3",
+        "eyebrow": "HOSGEDOPOL · Contacto",
+        "heading": "Nuevo mensaje de contacto",
+        "intro": "",
+        "footer": ""
+      },
+      "textFallback": "Nuevo mensaje de contacto\n\n{{form.fields}}"
+    },
+    {
+      "slug": "hosgedopol-citas-en-linea",
+      "title": "HOSGEDOPOL · Citas en Línea",
+      "status": "publish",
+      "mode": "visual",
+      "subject": "Nueva solicitud de cita — {{field.firstName}} {{field.lastName}}",
+      "preheader": "Nueva solicitud recibida desde Citas en Línea.",
+      "visual": {
+        "logoUrl": "",
+        "outerBackground": "#f5f8fb",
+        "headerBackground": "#06477f",
+        "labelColor": "#123f68",
+        "valueColor": "#344f67",
+        "separatorColor": "#e8eef3",
+        "eyebrow": "HOSGEDOPOL · Citas en Línea",
+        "heading": "Nueva solicitud de cita",
+        "intro": "",
+        "footer": ""
+      },
+      "textFallback": "Nueva solicitud de cita\n\n{{form.fields}}"
+    }
+  ],
+  "manualMediaStep": "Seleccionar el logo institucional desde la Media Library en cada plantilla. No se inventa una URL de uploads y no se duplica el archivo existente."
+}
