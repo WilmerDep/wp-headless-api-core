@@ -51,8 +51,18 @@ if ( false === strpos( $plugin, 'modules/Forms/Forms_Import_UI.php' ) ) {
 	exit( 1 );
 }
 
-if ( false === strpos( $plugin, 'Version: 0.7.4' ) || false === strpos( $plugin, "HEADLESS_API_CORE_VERSION', '0.7.4" ) ) {
-	fwrite( STDERR, "Plugin version must be 0.7.4 for the current Forms visual gate.\n" );
+preg_match( '/\* Version:\s*([0-9.]+)/', $plugin, $header_match );
+preg_match( "/HEADLESS_API_CORE_VERSION',\s*'([0-9.]+)'/", $plugin, $constant_match );
+$header_version   = isset( $header_match[1] ) ? $header_match[1] : '';
+$constant_version = isset( $constant_match[1] ) ? $constant_match[1] : '';
+
+if ( '' === $header_version || $header_version !== $constant_version ) {
+	fwrite( STDERR, "Plugin header and HEADLESS_API_CORE_VERSION must stay synchronized.\n" );
+	exit( 1 );
+}
+
+if ( version_compare( $header_version, '0.7.3', '<' ) ) {
+	fwrite( STDERR, "Forms SIP importer UI requires plugin version 0.7.3 or newer.\n" );
 	exit( 1 );
 }
 
