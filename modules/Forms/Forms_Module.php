@@ -33,8 +33,10 @@ final class Forms_Module {
 		$renderer   = new Mail_Template_Renderer();
 		$submission = new Forms_Submission( $mail_settings, $validator, $renderer );
 		$controller = new Forms_Controller( $serializer, $submission );
+		$admin      = new Forms_Admin();
 
 		$post_type->register();
 		$controller->register();
+		$admin->register();
 	}
 }
