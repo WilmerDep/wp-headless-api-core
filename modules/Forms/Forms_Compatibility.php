@@ -10,7 +10,7 @@ namespace HeadlessApiCore\Modules\Forms;
 defined( 'ABSPATH' ) || exit;
 
 final class Forms_Compatibility {
-	const MIGRATION_OPTION = 'headless_api_core_forms_json_unicode_v074';
+	const MIGRATION_OPTION = 'headless_api_core_forms_json_unicode_v076';
 
 	/** @var bool */
 	private $repairing = false;
@@ -26,7 +26,8 @@ final class Forms_Compatibility {
 	/**
 	 * WordPress unslashes metadata before storage. JSON created with the default
 	 * wp_json_encode() may therefore lose the backslash in sequences such as
-	 * \u00e9 and later render as u00e9. Canonicalize Forms JSON with real UTF-8.
+	 * \u00e9 or \u2014 and later render as u00e9 / u2014. Canonicalize Forms
+	 * JSON with real UTF-8 while preserving the public schema.
 	 */
 	public function repair_meta_after_write( $meta_id, $post_id, $meta_key, $meta_value ) {
 		unset( $meta_id );
@@ -132,7 +133,11 @@ JS;
 		$this->repairing = false;
 	}
 
-	/** Recursively recover legacy u00XX sequences left by an unslashed JSON write. */
+	/**
+	 * Recursively recover legacy uXXXX sequences left by an unslashed JSON
+	 * write. Decode surrogate pairs first so supplementary Unicode remains
+	 * valid, then decode ordinary four-hex escapes such as u00e9 and u2014.
+	 */
 	private function repair_value( $value ) {
 		if ( is_array( $value ) ) {
 			foreach ( $value as $key => $item ) {
@@ -140,14 +145,23 @@ JS;
 			}
 			return $value;
 		}
-		if ( ! is_string( $value ) || false === stripos( $value, 'u00' ) ) {
+		if ( ! is_string( $value ) || ! preg_match( '/u[0-9a-fA-F]{4}/', $value ) ) {
 			return $value;
 		}
 
-		return preg_replace_callback(
-			'/u00([0-9a-fA-F]{2})/',
+		$value = preg_replace_callback(
+			'/u(d[89ab][0-9a-f]{2})u(d[cdef][0-9a-f]{2})/i',
 			static function ( $matches ) {
-				$decoded = json_decode( '"\\u00' . strtolower( $matches[1] ) . '"' );
+				$decoded = json_decode( '"\\u' . strtolower( $matches[1] ) . '\\u' . strtolower( $matches[2] ) . '"' );
+				return is_string( $decoded ) ? $decoded : $matches[0];
+			},
+			$value
+		);
+
+		return preg_replace_callback(
+			'/u([0-9a-fA-F]{4})/',
+			static function ( $matches ) {
+				$decoded = json_decode( '"\\u' . strtolower( $matches[1] ) . '"' );
 				return is_string( $decoded ) ? $decoded : $matches[0];
 			},
 			$value
