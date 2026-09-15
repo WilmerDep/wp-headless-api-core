@@ -37,8 +37,10 @@ if ( false === strpos( $plugin, 'modules/Forms/Forms_Compatibility.php' ) ) {
 	exit( 1 );
 }
 
-if ( false === strpos( $plugin, 'Version: 0.7.4' ) ) {
-	fwrite( STDERR, "Plugin version was not bumped to 0.7.4.\n" );
+preg_match( '/\* Version:\s*([0-9.]+)/', $plugin, $version_match );
+$version = isset( $version_match[1] ) ? $version_match[1] : '';
+if ( '' === $version || version_compare( $version, '0.7.4', '<' ) ) {
+	fwrite( STDERR, "Forms unicode compatibility requires plugin version 0.7.4 or newer.\n" );
 	exit( 1 );
 }
 
