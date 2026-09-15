@@ -108,6 +108,9 @@ jobs:
       - name: Run Forms unicode compatibility contract test
         run: php tests/forms-unicode-compatibility.php
 
+      - name: Run Forms blank section title regression test
+        run: php tests/forms-section-title-contract.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
