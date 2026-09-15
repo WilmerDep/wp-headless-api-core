@@ -54,10 +54,14 @@ final class Mail_Template_Renderer {
 			'submission.date' => isset( $form['submissionDate'] ) ? (string) $form['submissionDate'] : gmdate( 'c' ),
 		);
 		foreach ( $values as $name => $value ) {
+			$field_name = Forms_Schema::sanitize_field_name( $name );
+			if ( '' === $field_name ) {
+				continue;
+			}
 			if ( is_scalar( $value ) ) {
-				$context[ 'field.' . sanitize_key( $name ) ] = (string) $value;
+				$context[ 'field.' . $field_name ] = (string) $value;
 			} elseif ( is_array( $value ) ) {
-				$context[ 'field.' . sanitize_key( $name ) ] = implode( ', ', array_map( 'strval', $value ) );
+				$context[ 'field.' . $field_name ] = implode( ', ', array_map( 'strval', $value ) );
 			}
 		}
 		return $context;
@@ -70,7 +74,7 @@ final class Mail_Template_Renderer {
 			if ( ! is_array( $field ) || ! empty( $field['hidden'] ) ) {
 				continue;
 			}
-			$name = isset( $field['name'] ) ? sanitize_key( $field['name'] ) : '';
+			$name = isset( $field['name'] ) ? Forms_Schema::sanitize_field_name( $field['name'] ) : '';
 			if ( '' === $name || ! array_key_exists( $name, $values ) ) {
 				continue;
 			}
@@ -98,7 +102,6 @@ final class Mail_Template_Renderer {
 		$intro     = isset( $visual['intro'] ) ? sanitize_textarea_field( $visual['intro'] ) : '';
 		$footer    = isset( $visual['footer'] ) ? sanitize_textarea_field( $visual['footer'] ) : '';
 		$logo_url  = isset( $visual['logoUrl'] ) ? esc_url_raw( $visual['logoUrl'], array( 'http', 'https' ) ) : '';
-		$table     = $this->field_rows_html( $rows, $label, $value, $separator );
 		$logo      = '';
 
 		if ( $logo_url ) {
