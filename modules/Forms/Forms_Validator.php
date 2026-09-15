@@ -35,7 +35,7 @@ final class Forms_Validator {
 		$values = array();
 		$errors = array();
 		foreach ( $fields as $field ) {
-			$name = isset( $field['name'] ) ? sanitize_key( $field['name'] ) : '';
+			$name = isset( $field['name'] ) ? Forms_Schema::sanitize_field_name( $field['name'] ) : '';
 			if ( '' === $name ) {
 				continue;
 			}
