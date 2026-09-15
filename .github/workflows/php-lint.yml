@@ -96,6 +96,9 @@ jobs:
       - name: Run Forms mail workflow and fixture contract test
         run: php tests/forms-mail-workflow-contract.php
 
+      - name: Run Forms post type/admin menu contract test
+        run: php tests/forms-post-types-contract.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
