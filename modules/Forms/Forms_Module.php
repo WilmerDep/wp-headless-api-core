@@ -27,18 +27,20 @@ final class Forms_Module {
 			return;
 		}
 
-		$post_type    = new Forms_Post_Type();
-		$serializer   = new Forms_Serializer( $mail_settings );
-		$validator    = new Forms_Validator();
-		$renderer     = new Mail_Template_Renderer();
+		$post_type     = new Forms_Post_Type();
+		$serializer    = new Forms_Serializer( $mail_settings );
+		$validator     = new Forms_Validator();
+		$renderer      = new Mail_Template_Renderer();
 		$template_test = new Mail_Template_Test( $mail_settings, $renderer );
-		$submission   = new Forms_Submission( $mail_settings, $validator, $renderer );
-		$controller   = new Forms_Controller( $serializer, $submission );
-		$admin        = new Forms_Admin();
+		$submission    = new Forms_Submission( $mail_settings, $validator, $renderer );
+		$controller    = new Forms_Controller( $serializer, $submission );
+		$admin         = new Forms_Admin();
+		$importer      = new Forms_Package_Importer();
 
 		$post_type->register();
 		$controller->register();
 		$admin->register();
 		$template_test->register();
+		$importer->register();
 	}
 }
