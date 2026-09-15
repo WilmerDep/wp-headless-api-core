@@ -1,0 +1,118 @@
+{
+  "fixtureVersion": 1,
+  "scope": "project-only",
+  "form": {
+    "slug": "contacto",
+    "title": "Contacto",
+    "status": "publish",
+    "enabled": true,
+    "description": "Formulario institucional de contacto.",
+    "submitLabel": "Enviar mensaje",
+    "successMessage": "Tu mensaje fue enviado correctamente.",
+    "errorMessage": "No pudimos enviar el mensaje. Inténtalo nuevamente en unos minutos.",
+    "sections": [
+      {
+        "id": "contacto",
+        "eyebrow": "CONTACTO",
+        "title": "Envíanos un mensaje",
+        "description": "",
+        "order": 0
+      }
+    ],
+    "fields": [
+      {
+        "id": "fullName",
+        "name": "fullName",
+        "type": "text",
+        "label": "Nombre completo",
+        "placeholder": "Nombre completo",
+        "required": true,
+        "section": "contacto",
+        "order": 0,
+        "width": 6,
+        "autocomplete": "name",
+        "validation": {
+          "minLength": 2,
+          "maxLength": 120,
+          "pattern": "name"
+        }
+      },
+      {
+        "id": "email",
+        "name": "email",
+        "type": "email",
+        "label": "Correo electrónico",
+        "placeholder": "correo@ejemplo.com",
+        "required": true,
+        "section": "contacto",
+        "order": 1,
+        "width": 6,
+        "autocomplete": "email",
+        "validation": {
+          "maxLength": 160
+        }
+      },
+      {
+        "id": "subject",
+        "name": "subject",
+        "type": "text",
+        "label": "Asunto",
+        "placeholder": "Asunto",
+        "required": true,
+        "section": "contacto",
+        "order": 2,
+        "width": 12,
+        "validation": {
+          "minLength": 3,
+          "maxLength": 160,
+          "safeText": true
+        }
+      },
+      {
+        "id": "message",
+        "name": "message",
+        "type": "textarea",
+        "label": "Mensaje",
+        "placeholder": "Escribe tu mensaje",
+        "required": true,
+        "section": "contacto",
+        "order": 3,
+        "width": 12,
+        "validation": {
+          "minLength": 8,
+          "maxLength": 1800,
+          "safeText": true
+        }
+      }
+    ],
+    "notifications": [
+      {
+        "id": "contacto-interno",
+        "enabled": true,
+        "template": "hosgedopol-contacto",
+        "to": ["info@hosgedopol.gob.do"],
+        "cc": [],
+        "bcc": [],
+        "replyToField": "email",
+        "subject": "Nuevo mensaje de contacto — {{field.fullName}}"
+      }
+    ],
+    "antiSpam": {
+      "honeypot": true,
+      "honeypotField": "website",
+      "maxPayload": 65536
+    },
+    "rateLimit": {
+      "enabled": true,
+      "max": 5,
+      "window": 900
+    }
+  },
+  "sourceParity": {
+    "consumerEndpoint": "/api/public/contact",
+    "providerEndpoint": "/wp-json/headless-core/v1/forms/contacto/submit",
+    "smtpMovesToProvider": true,
+    "replyToPreserved": true,
+    "technicalBcc": "Configure as a notification BCC when required; do not keep SMTP/BCC delivery secrets in the Consumer."
+  }
+}
