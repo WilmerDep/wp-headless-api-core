@@ -67,7 +67,7 @@ final class Mail_Admin {
 
 		$recipient = isset( $_POST['test_recipient'] ) ? sanitize_email( wp_unslash( $_POST['test_recipient'] ) ) : '';
 		if ( ! is_email( $recipient ) ) {
-			$this->store_test_result( false, __( 'El correo de prueba no es válido.', 'wp-headless-api-core' ) );
+			$this->store_test_result( false, __( 'El correo de prueba no es válido.', 'wp-headless-api-core' ), false );
 			$this->redirect_with_notice( 'tested' );
 		}
 
@@ -82,7 +82,7 @@ final class Mail_Admin {
 			? sprintf( __( 'Correo de prueba enviado a %s.', 'wp-headless-api-core' ), $recipient )
 			: ( $this->last_error ? $this->last_error : __( 'WordPress no pudo enviar el correo de prueba.', 'wp-headless-api-core' ) );
 
-		$this->store_test_result( (bool) $sent, $message );
+		$this->store_test_result( (bool) $sent, $message, true );
 		$this->redirect_with_notice( 'tested' );
 	}
 
@@ -92,12 +92,16 @@ final class Mail_Admin {
 		}
 	}
 
-	private function store_test_result( $success, $message ) {
+	private function store_test_result( $success, $message, $record_transport = true ) {
 		set_transient(
 			'headless_mail_test_' . get_current_user_id(),
 			array( 'success' => (bool) $success, 'message' => sanitize_text_field( $message ) ),
 			MINUTE_IN_SECONDS
 		);
+
+		if ( $record_transport ) {
+			$this->settings->record_test( (bool) $success );
+		}
 	}
 
 	private function redirect_with_notice( $notice ) {
@@ -149,7 +153,7 @@ final class Mail_Admin {
 						<tr><th><label for="headless-smtp-encryption"><?php esc_html_e( 'Cifrado', 'wp-headless-api-core' ); ?></label></th><td><select id="headless-smtp-encryption" name="mail[encryption]" <?php disabled( $this->settings->is_constant_controlled( 'encryption' ) ); ?>><option value="tls" <?php selected( $values['encryption'], 'tls' ); ?>>TLS</option><option value="ssl" <?php selected( $values['encryption'], 'ssl' ); ?>>SSL</option><option value="none" <?php selected( $values['encryption'], 'none' ); ?>><?php esc_html_e( 'Ninguno', 'wp-headless-api-core' ); ?></option></select></td></tr>
 						<tr><th><?php esc_html_e( 'Autenticación', 'wp-headless-api-core' ); ?></th><td><label><input type="checkbox" name="mail[auth]" value="1" <?php checked( ! empty( $values['auth'] ) ); ?> <?php disabled( $this->settings->is_constant_controlled( 'auth' ) ); ?>> <?php esc_html_e( 'El servidor requiere usuario y contraseña', 'wp-headless-api-core' ); ?></label></td></tr>
 						<tr><th><label for="headless-smtp-user"><?php esc_html_e( 'Usuario', 'wp-headless-api-core' ); ?></label></th><td><input id="headless-smtp-user" class="regular-text" type="text" autocomplete="off" name="mail[username]" value="<?php echo esc_attr( $values['username'] ); ?>" <?php disabled( $this->settings->is_constant_controlled( 'username' ) ); ?>></td></tr>
-						<tr><th><label for="headless-smtp-password"><?php esc_html_e( 'Contraseña', 'wp-headless-api-core' ); ?></label></th><td><input id="headless-smtp-password" class="regular-text" type="password" autocomplete="new-password" name="mail[password]" value="" placeholder="<?php echo ! empty( $values['password'] ) ? esc_attr__( 'Configurada — deja vacío para conservarla', 'wp-headless-api-core' ) : ''; ?>" <?php disabled( $this->settings->is_constant_controlled( 'password' ) ); ?>><p class="description"><?php esc_html_e( 'Para mayor seguridad puedes definir las credenciales mediante constantes en wp-config.php.', 'wp-headless-api-core' ); ?></p></td></tr>
+						<tr><th><label for="headless-smtp-password"><?php esc_html_e( 'Contraseña', 'wp-headless-api-core' ); ?></label></th><td><input id="headless-smtp-password" class="regular-text" type="password" autocomplete="new-password" name="mail[password]" value="" placeholder="<?php echo ! empty( $values['password'] ) ? esc_attr__( 'Configurada — deja vacío para conservarla', 'wp-headless-api-core' ) : ''; ?>" <?php disabled( $this->settings->is_constant_controlled( 'password' ) ); ?>><p class="description"><?php echo ! empty( $values['password'] ) ? esc_html__( 'La contraseña está guardada. Por seguridad no se vuelve a mostrar; deja este campo vacío para conservarla.', 'wp-headless-api-core' ) : esc_html__( 'Para mayor seguridad puedes definir las credenciales mediante constantes en wp-config.php.', 'wp-headless-api-core' ); ?></p></td></tr>
 						</tbody></table>
 					</section>
 
