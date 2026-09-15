@@ -12,13 +12,13 @@ $plugin = file_get_contents( $root . '/wp-headless-api-core.php' );
 
 foreach (
 	array(
-		"added_post_meta",
-		"updated_post_meta",
-		"repair_existing_meta_once",
-		"JSON_UNESCAPED_UNICODE",
-		"wp_slash( $canonical )",
+		'added_post_meta',
+		'updated_post_meta',
+		'repair_existing_meta_once',
+		'JSON_UNESCAPED_UNICODE',
+		'wp_slash( $canonical )',
 		"'Subtítulo'",
-		"/u00([0-9a-fA-F]{2})/",
+		'/u00([0-9a-fA-F]{2})/',
 	) as $needle
 ) {
 	if ( false === strpos( $compat, $needle ) ) {
@@ -32,7 +32,7 @@ if ( false === strpos( $boot, 'new Forms_Compatibility()' ) || false === strpos(
 	exit( 1 );
 }
 
-if ( false === strpos( $plugin, "modules/Forms/Forms_Compatibility.php" ) ) {
+if ( false === strpos( $plugin, 'modules/Forms/Forms_Compatibility.php' ) ) {
 	fwrite( STDERR, "Forms compatibility file is not loaded by the plugin bootstrap.\n" );
 	exit( 1 );
 }
