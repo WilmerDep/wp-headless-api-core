@@ -155,6 +155,34 @@ final class Forms_Submission {
 			$headers[] = 'Reply-To: ' . sanitize_email( $values[ $reply_key ] );
 		}
 
+		/**
+		 * Allow trusted Provider extensions to add mail headers without coupling
+		 * Forms Core to a specific institution or downstream workflow.
+		 *
+		 * @param string[] $headers      wp_mail() headers.
+		 * @param array    $notification Normalized notification configuration.
+		 * @param array    $form         Submission/form context.
+		 * @param array    $values       Validated submission values.
+		 * @param array    $fields       Normalized form fields.
+		 */
+		$filtered_headers = apply_filters( 'headless_api_core_form_mail_headers', $headers, $notification, $form, $values, $fields );
+		if ( is_array( $filtered_headers ) ) {
+			$headers = array_values( array_filter( array_map( 'strval', $filtered_headers ), 'strlen' ) );
+		}
+
+		/**
+		 * Allow trusted Provider extensions to attach generated exports or files.
+		 * Core intentionally does not generate institution-specific spreadsheets.
+		 *
+		 * @param string[] $attachments  Absolute file paths accepted by wp_mail().
+		 * @param array    $notification Normalized notification configuration.
+		 * @param array    $form         Submission/form context.
+		 * @param array    $values       Validated submission values.
+		 * @param array    $fields       Normalized form fields.
+		 */
+		$attachments = apply_filters( 'headless_api_core_form_mail_attachments', array(), $notification, $form, $values, $fields );
+		$attachments = is_array( $attachments ) ? array_values( array_filter( array_map( 'strval', $attachments ), 'strlen' ) ) : array();
+
 		$alt_body = isset( $rendered['text'] ) ? (string) $rendered['text'] : '';
 		$alt_hook = static function ( $phpmailer ) use ( $alt_body ) {
 			if ( '' !== $alt_body ) {
@@ -162,7 +190,7 @@ final class Forms_Submission {
 			}
 		};
 		add_action( 'phpmailer_init', $alt_hook, 99 );
-		$sent = wp_mail( $to, $rendered['subject'], $rendered['html'], $headers );
+		$sent = wp_mail( $to, $rendered['subject'], $rendered['html'], $headers, $attachments );
 		remove_action( 'phpmailer_init', $alt_hook, 99 );
 
 		return $sent ? true : new WP_Error( 'wp_mail_failed' );
