@@ -105,6 +105,9 @@ jobs:
       - name: Run Forms SIP importer UI contract test
         run: php tests/forms-import-ui-contract.php
 
+      - name: Run Forms unicode compatibility contract test
+        run: php tests/forms-unicode-compatibility.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
