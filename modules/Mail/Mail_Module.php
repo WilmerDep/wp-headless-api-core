@@ -20,11 +20,13 @@ final class Mail_Module {
 
 		self::$settings = new Mail_Settings();
 		$admin          = new Mail_Admin( self::$settings );
+		$controller     = new Mail_Controller( self::$settings );
 
 		add_action( 'phpmailer_init', array( self::$settings, 'configure_phpmailer' ) );
 		add_filter( 'wp_mail_from', array( self::$settings, 'filter_from_email' ) );
 		add_filter( 'wp_mail_from_name', array( self::$settings, 'filter_from_name' ) );
 		$admin->register();
+		$controller->register();
 	}
 
 	/** Shared mail settings service for future modules such as Forms Core. */
