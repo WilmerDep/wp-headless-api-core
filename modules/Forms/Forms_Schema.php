@@ -86,14 +86,20 @@ final class Forms_Schema {
 			if ( isset( $validation[ $key ] ) ) {
 				$output[ $key ] = max( 0, absint( $validation[ $key ] ) );
 			}
+		}
+
 		foreach ( $num_keys as $key ) {
 			if ( isset( $validation[ $key ] ) && is_numeric( $validation[ $key ] ) ) {
 				$output[ $key ] = (float) $validation[ $key ];
 			}
+		}
+
 		foreach ( array( 'safeText', 'futureOnly', 'pastOnly' ) as $key ) {
 			if ( isset( $validation[ $key ] ) ) {
 				$output[ $key ] = (bool) $validation[ $key ];
 			}
+		}
+
 		if ( isset( $validation['pattern'] ) ) {
 			$pattern = sanitize_key( $validation['pattern'] );
 			if ( in_array( $pattern, array( 'name', 'digits', 'document' ), true ) ) {
@@ -108,9 +114,9 @@ final class Forms_Schema {
 		if ( ! is_array( $visibility ) ) {
 			return null;
 		}
-		$mode = isset( $visibility['mode'] ) && 'hide' === $visibility['mode'] ? 'hide' : 'show';
-		$all  = isset( $visibility['all'] ) && is_array( $visibility['all'] ) ? $visibility['all'] : array();
-		$out  = array();
+		$mode      = isset( $visibility['mode'] ) && 'hide' === $visibility['mode'] ? 'hide' : 'show';
+		$all       = isset( $visibility['all'] ) && is_array( $visibility['all'] ) ? $visibility['all'] : array();
+		$out       = array();
 		$operators = array( 'equals', 'not_equals', 'in', 'not_in', 'not_empty', 'empty' );
 
 		foreach ( $all as $rule ) {
