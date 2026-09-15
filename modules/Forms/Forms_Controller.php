@@ -17,11 +17,15 @@ final class Forms_Controller {
 	/** @var Forms_Serializer */
 	private $serializer;
 
-	public function __construct( Forms_Serializer $serializer ) {
+	/** @var Forms_Submission */
+	private $submission;
+
+	public function __construct( Forms_Serializer $serializer, Forms_Submission $submission ) {
 		$this->serializer = $serializer;
+		$this->submission = $submission;
 	}
 
-	/** Register public read-only form-schema routes. */
+	/** Register public form schema and submission routes. */
 	public function register() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
@@ -44,13 +48,28 @@ final class Forms_Controller {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'single' ),
 				'permission_callback' => '__return_true',
-				'args'                => array(
-					'slug' => array(
-						'required'          => true,
-						'sanitize_callback' => 'sanitize_title',
-					),
-				),
+				'args'                => $this->slug_args(),
 			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/forms/(?P<slug>[a-z0-9-]+)/submit',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'submit' ),
+				'permission_callback' => '__return_true',
+				'args'                => $this->slug_args(),
+			)
+		);
+	}
+
+	private function slug_args() {
+		return array(
+			'slug' => array(
+				'required'          => true,
+				'sanitize_callback' => 'sanitize_title',
+			),
 		);
 	}
 
@@ -78,10 +97,8 @@ final class Forms_Controller {
 
 	/** Return one published + enabled form by slug. */
 	public function single( WP_REST_Request $request ) {
-		$slug = sanitize_title( $request->get_param( 'slug' ) );
-		$post = get_page_by_path( $slug, OBJECT, Forms_Post_Type::FORM_POST_TYPE );
-
-		if ( ! $post || 'publish' !== $post->post_status || ! (bool) get_post_meta( $post->ID, Forms_Post_Type::META_ENABLED, true ) ) {
+		$post = $this->find_public_form( $request->get_param( 'slug' ) );
+		if ( ! $post ) {
 			return $this->response(
 				array(
 					'code'    => 'form_not_found',
@@ -92,6 +109,61 @@ final class Forms_Controller {
 		}
 
 		return $this->response( array( 'item' => $this->serializer->serialize( $post ) ) );
+	}
+
+	/** Validate, sanitize and deliver one public submission. */
+	public function submit( WP_REST_Request $request ) {
+		$post = $this->find_public_form( $request->get_param( 'slug' ) );
+		if ( ! $post ) {
+			return $this->response(
+				array( 'ok' => false, 'code' => 'form_not_found', 'message' => __( 'Form not found.', 'wp-headless-api-core' ) ),
+				404
+			);
+		}
+
+		$payload = $request->get_json_params();
+		if ( ! is_array( $payload ) ) {
+			return $this->response(
+				array( 'ok' => false, 'code' => 'invalid_payload', 'message' => __( 'The request body must be a JSON object.', 'wp-headless-api-core' ) ),
+				400
+			);
+		}
+
+		$client_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		$result    = $this->submission->submit( $post, $payload, $client_ip );
+		if ( is_wp_error( $result ) ) {
+			$data   = $result->get_error_data();
+			$data   = is_array( $data ) ? $data : array();
+			$status = isset( $data['status'] ) ? absint( $data['status'] ) : 400;
+			$body   = array(
+				'ok'      => false,
+				'code'    => $result->get_error_code(),
+				'message' => $result->get_error_message(),
+			);
+			if ( ! empty( $data['fieldErrors'] ) && is_array( $data['fieldErrors'] ) ) {
+				$body['fieldErrors'] = $data['fieldErrors'];
+			}
+			return $this->response( $body, $status );
+		}
+
+		if ( ! empty( $result['discarded'] ) ) {
+			return $this->response(
+				array( 'ok' => true, 'message' => (string) get_post_meta( $post->ID, Forms_Post_Type::META_SUCCESS_MESSAGE, true ) ),
+				200
+			);
+		}
+
+		return $this->response( $result, 200 );
+	}
+
+	/** Find one form that is safe for public discovery/submission. */
+	private function find_public_form( $slug ) {
+		$slug = sanitize_title( $slug );
+		$post = get_page_by_path( $slug, OBJECT, Forms_Post_Type::FORM_POST_TYPE );
+		if ( ! $post || 'publish' !== $post->post_status || ! (bool) get_post_meta( $post->ID, Forms_Post_Type::META_ENABLED, true ) ) {
+			return null;
+		}
+		return $post;
 	}
 
 	/** Build a no-store REST response for live form capability/schema data. */
