@@ -60,12 +60,17 @@ final class Forms_Compatibility {
 					$this->repair_one( (int) $post_id, $meta_key, $value );
 				}
 			}
-		}
 
 		update_option( self::MIGRATION_OPTION, HEADLESS_API_CORE_VERSION, false );
 	}
 
-	/** Replace implementation jargon with editor-facing Spanish without changing the API key. */
+	/**
+	 * Load a plain-language editorial layer on Forms screens.
+	 *
+	 * Internal schema keys stay stable for API compatibility, while the admin
+	 * experience avoids implementation jargon that everyday editors should not
+	 * need to understand.
+	 */
 	public function editorial_labels() {
 		$screen = get_current_screen();
 		if ( ! $screen || ! in_array( $screen->post_type, array( Forms_Post_Type::FORM_POST_TYPE, Forms_Post_Type::TEMPLATE_POST_TYPE ), true ) ) {
@@ -75,28 +80,13 @@ final class Forms_Compatibility {
 			return;
 		}
 
-		$script = <<<'JS'
-(function () {
-  function relabel(root) {
-    (root || document).querySelectorAll('label').forEach(function (label) {
-      var nodes = Array.prototype.slice.call(label.childNodes);
-      nodes.forEach(function (node) {
-        if (node.nodeType === Node.TEXT_NODE && node.nodeValue && node.nodeValue.trim() === 'Eyebrow') {
-          node.nodeValue = node.nodeValue.replace('Eyebrow', 'Subtítulo');
-        }
-      });
-    });
-  }
-  function boot() {
-    relabel(document);
-    var observer = new MutationObserver(function () { relabel(document); });
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
-}());
-JS;
-		wp_add_inline_script( 'headless-forms-admin', $script, 'after' );
+		wp_enqueue_script(
+			'headless-forms-editorial-ux',
+			plugins_url( 'assets/admin/forms-editorial-ux.js', HEADLESS_API_CORE_FILE ),
+			array( 'headless-forms-admin' ),
+			HEADLESS_API_CORE_VERSION,
+			true
+		);
 	}
 
 	/** Canonical JSON metadata keys owned by Forms Core. */
