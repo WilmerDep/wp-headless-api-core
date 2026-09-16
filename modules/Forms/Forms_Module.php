@@ -27,22 +27,24 @@ final class Forms_Module {
 			return;
 		}
 
-		$post_type     = new Forms_Post_Type();
-		$serializer    = new Forms_Serializer( $mail_settings );
-		$validator     = new Forms_Validator();
-		$renderer      = new Mail_Template_Renderer();
-		$template_test = new Mail_Template_Test( $mail_settings, $renderer );
-		$submission    = new Forms_Submission( $mail_settings, $validator, $renderer );
-		$controller    = new Forms_Controller( $serializer, $submission );
-		$admin         = new Forms_Admin();
-		$compatibility = new Forms_Compatibility();
-		$importer      = new Forms_Package_Importer();
-		$import_ui     = new Forms_Import_UI();
+		$post_type         = new Forms_Post_Type();
+		$serializer        = new Forms_Serializer( $mail_settings );
+		$validator         = new Forms_Validator();
+		$renderer          = new Mail_Template_Renderer();
+		$template_test     = new Mail_Template_Test( $mail_settings, $renderer );
+		$template_test_box = new Mail_Template_Test_Box( $mail_settings );
+		$submission        = new Forms_Submission( $mail_settings, $validator, $renderer );
+		$controller        = new Forms_Controller( $serializer, $submission );
+		$admin             = new Forms_Admin();
+		$compatibility     = new Forms_Compatibility();
+		$importer          = new Forms_Package_Importer();
+		$import_ui         = new Forms_Import_UI();
 
 		$post_type->register();
 		$controller->register();
 		$admin->register();
 		$template_test->register();
+		$template_test_box->register();
 		$compatibility->register();
 		$importer->register();
 		$import_ui->register();
