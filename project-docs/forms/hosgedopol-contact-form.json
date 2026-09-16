@@ -1,5 +1,5 @@
 {
-  "fixtureVersion": 1,
+  "fixtureVersion": 2,
   "scope": "project-only",
   "form": {
     "slug": "contacto",
@@ -14,7 +14,7 @@
       {
         "id": "contacto",
         "eyebrow": "CONTACTO",
-        "title": "Envíanos un mensaje",
+        "title": "",
         "description": "",
         "order": 0
       }
@@ -29,7 +29,7 @@
         "required": true,
         "section": "contacto",
         "order": 0,
-        "width": 6,
+        "width": 12,
         "autocomplete": "name",
         "validation": {
           "minLength": 2,
@@ -46,7 +46,7 @@
         "required": true,
         "section": "contacto",
         "order": 1,
-        "width": 6,
+        "width": 12,
         "autocomplete": "email",
         "validation": {
           "maxLength": 160
@@ -109,8 +109,11 @@
     }
   },
   "sourceParity": {
+    "consumerBranch": "main",
     "consumerEndpoint": "/api/public/contact",
     "providerEndpoint": "/wp-json/headless-core/v1/forms/contacto/submit",
+    "layout": "All four public fields are full-width in the current frontend.",
+    "pageEditorialContent": "The page heading and supporting copy remain Consumer-owned and are not duplicated as a form section title.",
     "smtpMovesToProvider": true,
     "replyToPreserved": true,
     "technicalBcc": "Configure as a notification BCC when required; do not keep SMTP/BCC delivery secrets in the Consumer."
