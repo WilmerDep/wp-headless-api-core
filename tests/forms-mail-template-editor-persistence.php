@@ -22,10 +22,19 @@ foreach (
 		'data-mail-test-form',
 		'data-mail-test-send',
 		'wp_create_nonce( self::NONCE_ACTION )',
+		"name=\"headless_mail_test_recipient\"",
+		'RECIPIENT_META_PREFIX',
+		"add_action( 'save_post_' . Forms_Post_Type::TEMPLATE_POST_TYPE, array( \$this, 'save_recipient_preference' ), 20, 2 )",
+		'get_user_meta( get_current_user_id(), self::recipient_meta_key( $post->ID ), true )',
+		'update_user_meta( get_current_user_id(), self::recipient_meta_key( $template_id ), $recipient )',
+		'delete_user_meta( get_current_user_id(), self::recipient_meta_key( $post_id ) )',
+		'Forms_Admin::TEMPLATE_NONCE_NAME',
+		'Forms_Admin::TEMPLATE_NONCE_ACTION',
+		'$this->persist_recipient_preference( $template_id, $recipient );',
 	) as $needle
 ) {
 	if ( false === strpos( $test, $needle ) ) {
-		fwrite( STDERR, "Safe Mail Template test UI contract missing: {$needle}\n" );
+		fwrite( STDERR, "Safe Mail Template persistence contract missing: {$needle}\n" );
 		exit( 1 );
 	}
 }
@@ -35,6 +44,7 @@ foreach (
 		"closest('[data-mail-test-send]')",
 		"document.createElement('form')",
 		"form.appendChild(hidden('action', action))",
+		"form.appendChild(hidden('recipient', recipient))",
 		"document.body.appendChild(form)",
 		'form.submit()',
 	) as $needle
