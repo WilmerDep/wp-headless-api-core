@@ -30,6 +30,7 @@ final class Forms_Serializer {
 		$submission_available = (bool) apply_filters( 'headless_api_core_form_submission_available', $submission_available, $post, $notifications );
 		$slug                 = sanitize_title( $post->post_name );
 		$base_path            = Plugin::REST_NAMESPACE . '/forms/' . rawurlencode( $slug );
+		$fields               = $this->public_fields( Forms_Schema::normalize_fields( get_post_meta( $post->ID, Forms_Post_Type::META_FIELDS, true ) ) );
 
 		return array(
 			'id'             => (int) $post->ID,
@@ -38,7 +39,7 @@ final class Forms_Serializer {
 			'description'    => (string) get_post_meta( $post->ID, Forms_Post_Type::META_DESCRIPTION, true ),
 			'schemaVersion'  => max( 1, absint( get_post_meta( $post->ID, Forms_Post_Type::META_SCHEMA_VERSION, true ) ) ),
 			'sections'       => Forms_Schema::normalize_sections( get_post_meta( $post->ID, Forms_Post_Type::META_SECTIONS, true ) ),
-			'fields'         => Forms_Schema::normalize_fields( get_post_meta( $post->ID, Forms_Post_Type::META_FIELDS, true ) ),
+			'fields'         => $fields,
 			'submitLabel'    => (string) get_post_meta( $post->ID, Forms_Post_Type::META_SUBMIT_LABEL, true ),
 			'successMessage' => (string) get_post_meta( $post->ID, Forms_Post_Type::META_SUCCESS_MESSAGE, true ),
 			'errorMessage'   => (string) get_post_meta( $post->ID, Forms_Post_Type::META_ERROR_MESSAGE, true ),
@@ -53,6 +54,23 @@ final class Forms_Serializer {
 				'contentType' => 'application/json',
 			),
 		);
+	}
+
+	/**
+	 * Keep the public REST field contract type-stable.
+	 *
+	 * PHP encodes an empty array as [] but Consumers expect validation to be
+	 * an object in every field. Preserve lists such as options as arrays while
+	 * representing an empty validation map as {} in JSON.
+	 */
+	private function public_fields( array $fields ) {
+		foreach ( $fields as $index => $field ) {
+			if ( ! isset( $field['validation'] ) || empty( $field['validation'] ) ) {
+				$fields[ $index ]['validation'] = (object) array();
+			}
+		}
+
+		return $fields;
 	}
 
 	/** Require at least one complete, published notification route. */
