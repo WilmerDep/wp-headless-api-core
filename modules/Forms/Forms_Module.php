@@ -28,6 +28,7 @@ final class Forms_Module {
 		}
 
 		$post_type     = new Forms_Post_Type();
+		$identity      = new Forms_Identity();
 		$serializer    = new Forms_Serializer( $mail_settings );
 		$validator     = new Forms_Validator();
 		$renderer      = new Mail_Template_Renderer();
@@ -40,6 +41,7 @@ final class Forms_Module {
 		$import_ui     = new Forms_Import_UI();
 
 		$post_type->register();
+		$identity->register();
 		$controller->register();
 		$admin->register();
 		$template_test->register();
