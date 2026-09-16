@@ -32,7 +32,7 @@ foreach (
 		"'/forms'",
 		"'/forms/(?P<slug>[a-z0-9-]+)'",
 		"'/forms/(?P<slug>[a-z0-9-]+)/submit'",
-		"array_map( array( $this->serializer, 'serialize' ), $posts )",
+		"array_map( array( \$this->serializer, 'serialize' ), \$posts )",
 	) as $needle
 ) {
 	if ( false === strpos( $controller, $needle ) ) {
@@ -41,7 +41,7 @@ foreach (
 	}
 }
 
-$contact_path = $root . '/project-docs/forms/hosgedopol-contact-form.json';
+$contact_path     = $root . '/project-docs/forms/hosgedopol-contact-form.json';
 $appointment_path = $root . '/project-docs/forms/hosgedopol-appointment-form.json';
 
 foreach ( array( $contact_path, $appointment_path ) as $path ) {
