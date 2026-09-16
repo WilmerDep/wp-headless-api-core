@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Headless API Core
  * Description: Modular REST API core for using WordPress as a headless CMS.
- * Version: 0.7.12
+ * Version: 0.7.13
  * Author: WilmerDep
  * Text Domain: wp-headless-api-core
  * Domain Path: /languages
@@ -10,7 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'HEADLESS_API_CORE_VERSION', '0.7.12' );
+define( 'HEADLESS_API_CORE_VERSION', '0.7.13' );
 define( 'HEADLESS_API_CORE_FILE', __FILE__ );
 define( 'HEADLESS_API_CORE_PATH', plugin_dir_path( __FILE__ ) );
 
@@ -23,6 +23,7 @@ require_once HEADLESS_API_CORE_PATH . 'modules/Mail/Mail_Controller.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Mail/Mail_Module.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Schema.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Post_Type.php';
+require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Identity.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Forms_Validator.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Mail_Template_Renderer.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Forms/Mail_Template_Test.php';
