@@ -7,6 +7,7 @@
 
 namespace HeadlessApiCore\Modules\Forms;
 
+use HeadlessApiCore\Core\Plugin;
 use HeadlessApiCore\Modules\Mail\Mail_Settings;
 use WP_Post;
 
@@ -22,15 +23,17 @@ final class Forms_Serializer {
 
 	/** Serialize one published form into the public headless contract. */
 	public function serialize( WP_Post $post ) {
-		$enabled       = (bool) get_post_meta( $post->ID, Forms_Post_Type::META_ENABLED, true );
-		$notifications = Forms_Schema::normalize_notifications( get_post_meta( $post->ID, Forms_Post_Type::META_NOTIFICATIONS, true ) );
-		$delivery_ready = $this->notifications_ready( $notifications );
+		$enabled              = (bool) get_post_meta( $post->ID, Forms_Post_Type::META_ENABLED, true );
+		$notifications        = Forms_Schema::normalize_notifications( get_post_meta( $post->ID, Forms_Post_Type::META_NOTIFICATIONS, true ) );
+		$delivery_ready       = $this->notifications_ready( $notifications );
 		$submission_available = $enabled && $delivery_ready && $this->mail_settings->is_ready();
 		$submission_available = (bool) apply_filters( 'headless_api_core_form_submission_available', $submission_available, $post, $notifications );
+		$slug                 = sanitize_title( $post->post_name );
+		$base_path            = Plugin::REST_NAMESPACE . '/forms/' . rawurlencode( $slug );
 
 		return array(
 			'id'             => (int) $post->ID,
-			'slug'           => $post->post_name,
+			'slug'           => $slug,
 			'title'          => get_the_title( $post ),
 			'description'    => (string) get_post_meta( $post->ID, Forms_Post_Type::META_DESCRIPTION, true ),
 			'schemaVersion'  => max( 1, absint( get_post_meta( $post->ID, Forms_Post_Type::META_SCHEMA_VERSION, true ) ) ),
@@ -39,9 +42,15 @@ final class Forms_Serializer {
 			'submitLabel'    => (string) get_post_meta( $post->ID, Forms_Post_Type::META_SUBMIT_LABEL, true ),
 			'successMessage' => (string) get_post_meta( $post->ID, Forms_Post_Type::META_SUCCESS_MESSAGE, true ),
 			'errorMessage'   => (string) get_post_meta( $post->ID, Forms_Post_Type::META_ERROR_MESSAGE, true ),
+			'api'            => array(
+				'schema' => rest_url( $base_path ),
+				'submit' => rest_url( $base_path . '/submit' ),
+			),
 			'submission'     => array(
-				'enabled'   => $enabled,
-				'available' => $submission_available,
+				'enabled'     => $enabled,
+				'available'   => $submission_available,
+				'method'      => 'POST',
+				'contentType' => 'application/json',
 			),
 		);
 	}
