@@ -36,6 +36,7 @@ final class Mail_Template_Test {
 		add_action( 'admin_post_' . self::ACTION, array( $this, 'handle' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
 		add_action( 'save_post_' . Forms_Post_Type::TEMPLATE_POST_TYPE, array( $this, 'save_recipient_preference' ), 20, 2 );
+		add_filter( 'redirect_post_location', array( $this, 'keep_editor_after_save' ), 20, 2 );
 	}
 
 	/** Load the detached test-submit helper only on Mail Template editor screens. */
@@ -361,6 +362,34 @@ final class Mail_Template_Test {
 			default:
 				return __( 'Valor de prueba', 'wp-headless-api-core' );
 		}
+	}
+
+	/** Keep a normal Update/Publish action on the same mail-template editor. */
+	public function keep_editor_after_save( $location, $post_id ) {
+		if ( Forms_Post_Type::TEMPLATE_POST_TYPE !== get_post_type( $post_id ) ) {
+			return $location;
+		}
+
+		$action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+		if ( 'editpost' !== $action ) {
+			return $location;
+		}
+
+		$editor = get_edit_post_link( $post_id, 'raw' );
+		if ( ! $editor ) {
+			return $location;
+		}
+
+		$query = wp_parse_url( $location, PHP_URL_QUERY );
+		$args  = array();
+		if ( is_string( $query ) ) {
+			parse_str( $query, $args );
+		}
+		if ( isset( $args['message'] ) ) {
+			$editor = add_query_arg( 'message', absint( $args['message'] ), $editor );
+		}
+
+		return $editor;
 	}
 
 	/** Persist a short per-user result and return to the template editor. */
