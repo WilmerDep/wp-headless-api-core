@@ -13,10 +13,11 @@ use WP_Post;
 defined( 'ABSPATH' ) || exit;
 
 final class Mail_Template_Test {
-	const ACTION       = 'headless_mail_template_test';
-	const NONCE_ACTION = 'headless_mail_template_test_send';
-	const NONCE_NAME   = 'headless_mail_template_test_nonce';
-	const RESULT_KEY   = 'headless_mail_template_test_result_';
+	const ACTION                = 'headless_mail_template_test';
+	const NONCE_ACTION          = 'headless_mail_template_test_send';
+	const NONCE_NAME            = 'headless_mail_template_test_nonce';
+	const RESULT_KEY            = 'headless_mail_template_test_result_';
+	const RECIPIENT_META_PREFIX = 'headless_mail_template_test_recipient_';
 
 	/** @var Mail_Settings */
 	private $mail_settings;
@@ -34,6 +35,7 @@ final class Mail_Template_Test {
 		add_action( 'add_meta_boxes_' . Forms_Post_Type::TEMPLATE_POST_TYPE, array( $this, 'add_meta_box' ) );
 		add_action( 'admin_post_' . self::ACTION, array( $this, 'handle' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+		add_action( 'save_post_' . Forms_Post_Type::TEMPLATE_POST_TYPE, array( $this, 'save_recipient_preference' ), 20, 2 );
 	}
 
 	/** Load the detached test-submit helper only on Mail Template editor screens. */
@@ -78,7 +80,9 @@ final class Mail_Template_Test {
 		}
 
 		$user        = wp_get_current_user();
-		$recipient   = $user && is_email( $user->user_email ) ? $user->user_email : get_option( 'admin_email' );
+		$fallback    = $user && is_email( $user->user_email ) ? $user->user_email : get_option( 'admin_email' );
+		$saved       = sanitize_email( (string) get_user_meta( get_current_user_id(), self::recipient_meta_key( $post->ID ), true ) );
+		$recipient   = is_email( $saved ) ? $saved : $fallback;
 		$forms       = get_posts(
 			array(
 				'post_type'      => Forms_Post_Type::FORM_POST_TYPE,
@@ -108,7 +112,8 @@ final class Mail_Template_Test {
 		>
 			<p>
 				<label for="headless-mail-test-recipient"><strong><?php esc_html_e( 'Destinatario', 'wp-headless-api-core' ); ?></strong></label>
-				<input id="headless-mail-test-recipient" class="widefat" type="email" data-mail-test-recipient value="<?php echo esc_attr( $recipient ); ?>">
+				<input id="headless-mail-test-recipient" class="widefat" type="email" name="headless_mail_test_recipient" data-mail-test-recipient value="<?php echo esc_attr( $recipient ); ?>" required>
+				<small class="description"><?php esc_html_e( 'Se recuerda para tu usuario en esta plantilla.', 'wp-headless-api-core' ); ?></small>
 			</p>
 			<p>
 				<label for="headless-mail-test-form"><strong><?php esc_html_e( 'Datos de ejemplo', 'wp-headless-api-core' ); ?></strong></label>
@@ -149,6 +154,7 @@ final class Mail_Template_Test {
 		if ( ! is_email( $recipient ) ) {
 			$this->finish( $template_id, false, __( 'Introduce un destinatario válido.', 'wp-headless-api-core' ) );
 		}
+		$this->persist_recipient_preference( $template_id, $recipient );
 		if ( ! $this->mail_settings->is_ready() ) {
 			$this->finish( $template_id, false, __( 'Mail Core no está listo para enviar.', 'wp-headless-api-core' ) );
 		}
@@ -193,6 +199,52 @@ final class Mail_Template_Test {
 			true,
 			sprintf( __( 'Correo de prueba enviado a %s.', 'wp-headless-api-core' ), $recipient )
 		);
+	}
+
+	/** Keep the test recipient as a per-user, per-template editor preference. */
+	public function save_recipient_preference( $post_id, WP_Post $post ) {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( wp_is_post_revision( $post_id ) || Forms_Post_Type::TEMPLATE_POST_TYPE !== $post->post_type ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) || ! isset( $_POST['headless_mail_test_recipient'] ) ) {
+			return;
+		}
+		if (
+			! isset( $_POST[ Forms_Admin::TEMPLATE_NONCE_NAME ] ) ||
+			! wp_verify_nonce(
+				sanitize_text_field( wp_unslash( $_POST[ Forms_Admin::TEMPLATE_NONCE_NAME ] ) ),
+				Forms_Admin::TEMPLATE_NONCE_ACTION
+			)
+		) {
+			return;
+		}
+
+		$raw       = trim( (string) wp_unslash( $_POST['headless_mail_test_recipient'] ) );
+		$recipient = sanitize_email( $raw );
+		if ( '' === $raw ) {
+			delete_user_meta( get_current_user_id(), self::recipient_meta_key( $post_id ) );
+			return;
+		}
+		if ( is_email( $recipient ) ) {
+			$this->persist_recipient_preference( $post_id, $recipient );
+		}
+	}
+
+	/** Store one valid recipient without changing the shared template content. */
+	private function persist_recipient_preference( $template_id, $recipient ) {
+		$recipient = sanitize_email( $recipient );
+		if ( ! is_email( $recipient ) ) {
+			return;
+		}
+		update_user_meta( get_current_user_id(), self::recipient_meta_key( $template_id ), $recipient );
+	}
+
+	/** Build the isolated user-meta key for a template test recipient. */
+	private static function recipient_meta_key( $template_id ) {
+		return self::RECIPIENT_META_PREFIX . absint( $template_id );
 	}
 
 	/** Build test values from one saved form or a generic fallback contract. */
