@@ -38,6 +38,12 @@ final class Forms_Controller {
 				'methods'             => 'GET',
 				'callback'            => array( $this, 'collection' ),
 				'permission_callback' => '__return_true',
+				'args'                => array(
+					'key' => array(
+						'required'          => false,
+						'sanitize_callback' => array( Forms_Identity::class, 'sanitize_key' ),
+					),
+				),
 			)
 		);
 
@@ -74,20 +80,41 @@ final class Forms_Controller {
 	}
 
 	/** Return published, enabled forms for discovery by headless consumers. */
-	public function collection() {
+	public function collection( WP_REST_Request $request ) {
+		$key_param = $request->get_param( 'key' );
+		$key       = null === $key_param ? '' : Forms_Identity::sanitize_key( $key_param );
+		if ( null !== $key_param && '' === $key ) {
+			return $this->response(
+				array(
+					'code'    => 'invalid_form_key',
+					'message' => __( 'Invalid form key.', 'wp-headless-api-core' ),
+				),
+				400
+			);
+		}
+
+		$meta_query = array(
+			array(
+				'key'     => Forms_Post_Type::META_ENABLED,
+				'value'   => '1',
+				'compare' => '=',
+			),
+		);
+		if ( '' !== $key ) {
+			$meta_query[] = array(
+				'key'     => Forms_Identity::META_KEY,
+				'value'   => $key,
+				'compare' => '=',
+			);
+		}
+
 		$posts = get_posts(
 			array(
 				'post_type'      => Forms_Post_Type::FORM_POST_TYPE,
 				'post_status'    => 'publish',
 				'posts_per_page' => -1,
 				'orderby'        => array( 'menu_order' => 'ASC', 'ID' => 'ASC' ),
-				'meta_query'     => array(
-					array(
-						'key'     => Forms_Post_Type::META_ENABLED,
-						'value'   => '1',
-						'compare' => '=',
-					),
-				),
+				'meta_query'     => $meta_query,
 			)
 		);
 
