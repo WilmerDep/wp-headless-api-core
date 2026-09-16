@@ -117,8 +117,8 @@ jobs:
       - name: Run Forms contextual advanced-rules UX contract test
         run: php tests/forms-contextual-rules-ux.php
 
-      - name: Run Contact frontend parity fixture test
-        run: php tests/forms-contact-parity.php
+      - name: Run Forms dynamic discovery/API contract test
+        run: php tests/forms-discovery-contract.php
 
       - name: Resolve plugin version
         id: plugin
