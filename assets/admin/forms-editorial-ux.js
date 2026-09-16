@@ -16,9 +16,22 @@
     'Máx. caracteres': 'Máximo de caracteres',
     'Min. palabras': 'Mínimo de palabras',
     'Máx. palabras': 'Máximo de palabras',
+    'Mínimo numérico': 'Valor mínimo',
+    'Máximo numérico': 'Valor máximo',
+    'Patrón': 'Formato permitido',
+    'Variante Consumer': 'Variante especial del sitio',
     'Texto seguro': 'Bloquear contenido riesgoso',
     'Solo futuro': 'Solo fechas futuras',
-    'Solo pasado': 'Solo fechas pasadas'
+    'Solo pasado': 'Solo fechas pasadas',
+    'Opciones': 'Opciones disponibles'
+  };
+
+  var FRIENDLY_FIELD_TYPES = {
+    select: 'Lista desplegable',
+    radio: 'Una sola opción',
+    checkbox: 'Casillas de selección',
+    hidden: 'Campo oculto',
+    rating: 'Valoración'
   };
 
   function directText(label) {
@@ -72,6 +85,10 @@
         addSmall(label, 'Ayuda al navegador a completar datos conocidos del usuario.');
       } else if (current.indexOf('Componente especial del sitio') === 0) {
         addSmall(label, 'Opcional. Solo se usa cuando el sitio necesita un control especial.');
+      } else if (current === 'Variante especial del sitio') {
+        addSmall(label, 'Opcional. Ajuste técnico para presentaciones especiales del sitio.');
+      } else if (current === 'Formato permitido') {
+        addSmall(label, 'Elige una regla conocida solo cuando este campo la necesite.');
       }
     });
   }
@@ -163,16 +180,169 @@
     }
   }
 
+  function setControlVisible(card, selector, visible) {
+    var control = card.querySelector(selector);
+    if (!control) return;
+    var label = control.closest('label');
+    if (!label) return;
+    label.style.display = visible ? '' : 'none';
+    label.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  }
+
+  function setCheckVisible(card, validationKey, visible) {
+    setControlVisible(card, '[data-validation-prop="' + validationKey + '"]', visible);
+  }
+
+  function friendlyTypeOptions(card) {
+    var select = card.querySelector('[data-prop="type"]');
+    if (!select) return;
+    Array.prototype.slice.call(select.options).forEach(function (option) {
+      if (Object.prototype.hasOwnProperty.call(FRIENDLY_FIELD_TYPES, option.value)) {
+        option.textContent = FRIENDLY_FIELD_TYPES[option.value];
+      }
+    });
+
+    var small = card.querySelector('header small');
+    if (!small) return;
+    Object.keys(FRIENDLY_FIELD_TYPES).forEach(function (key) {
+      var original = {
+        select: 'Select',
+        radio: 'Radio',
+        checkbox: 'Checkbox',
+        hidden: 'Oculto',
+        rating: 'Valoración'
+      }[key];
+      if (original) small.textContent = small.textContent.replace(' · ' + original + ' · ', ' · ' + FRIENDLY_FIELD_TYPES[key] + ' · ');
+    });
+  }
+
+  function technicalDetails(card) {
+    var existing = card.querySelector('[data-editorial-technical]');
+    if (!existing) {
+      existing = document.createElement('details');
+      existing.className = 'headless-forms-technical';
+      existing.setAttribute('data-editorial-technical', '1');
+      existing.innerHTML = '<summary>Configuración técnica opcional</summary><p class="description">Estos datos conectan el campo con el sitio web. Normalmente no necesitas modificarlos.</p><div class="headless-forms-grid-2" data-editorial-technical-grid></div>';
+      var advanced = card.querySelector('.headless-forms-advanced');
+      if (advanced) card.insertBefore(existing, advanced);
+      else card.appendChild(existing);
+    }
+
+    var grid = existing.querySelector('[data-editorial-technical-grid]');
+    if (!grid) return;
+    ['[data-prop="name"]', '[data-prop="autocomplete"]', '[data-ui-prop="component"]', '[data-ui-prop="variant"]'].forEach(function (selector) {
+      var control = card.querySelector(selector);
+      if (!control) return;
+      var label = control.closest('label');
+      if (label && label.parentNode !== grid) grid.appendChild(label);
+    });
+  }
+
+  function contextHelpForType(type) {
+    if (type === 'select' || type === 'radio' || type === 'checkbox') {
+      return 'Define las opciones que podrá elegir la persona. Las demás reglas que no aplican a este tipo se ocultan automáticamente.';
+    }
+    if (type === 'number' || type === 'rating') {
+      return 'Puedes limitar el valor mínimo y máximo permitido. Las reglas de texto no se muestran porque no aplican a este campo.';
+    }
+    if (type === 'date') {
+      return 'Puedes permitir únicamente fechas futuras o pasadas. Las reglas de texto y números se mantienen fuera de esta vista.';
+    }
+    if (type === 'textarea') {
+      return 'Puedes controlar caracteres, palabras y contenido riesgoso para este campo de texto largo.';
+    }
+    if (type === 'text') {
+      return 'Puedes controlar la longitud, el formato permitido y la protección del texto.';
+    }
+    if (type === 'email') {
+      return 'El formato de correo se valida automáticamente. Aquí solo necesitas ajustar su longitud cuando sea necesario.';
+    }
+    if (type === 'tel') {
+      return 'Puedes controlar la longitud y, si corresponde, aplicar un formato permitido. La validación especializada del sitio puede mantenerse aparte.';
+    }
+    if (type === 'hidden') {
+      return 'Este campo trabaja de forma interna y normalmente no requiere reglas visibles para el usuario.';
+    }
+    return 'Solo se muestran las reglas que aplican a este tipo de campo.';
+  }
+
+  function applyFieldContext(card) {
+    var typeControl = card.querySelector('[data-prop="type"]');
+    if (!typeControl) return;
+    var type = typeControl.value || 'text';
+    var choice = ['select', 'radio', 'checkbox'].indexOf(type) !== -1;
+    var length = ['text', 'email', 'tel', 'textarea'].indexOf(type) !== -1;
+    var words = type === 'textarea';
+    var numeric = ['number', 'rating'].indexOf(type) !== -1;
+    var date = type === 'date';
+    var safeText = ['text', 'textarea'].indexOf(type) !== -1;
+    var pattern = ['text', 'tel'].indexOf(type) !== -1;
+    var placeholder = ['text', 'email', 'tel', 'number', 'textarea'].indexOf(type) !== -1;
+    var autocomplete = ['text', 'email', 'tel'].indexOf(type) !== -1;
+
+    setControlVisible(card, '[data-options]', choice);
+    setControlVisible(card, '[data-validation-prop="minLength"]', length);
+    setControlVisible(card, '[data-validation-prop="maxLength"]', length);
+    setControlVisible(card, '[data-validation-prop="minWords"]', words);
+    setControlVisible(card, '[data-validation-prop="maxWords"]', words);
+    setControlVisible(card, '[data-validation-prop="min"]', numeric);
+    setControlVisible(card, '[data-validation-prop="max"]', numeric);
+    setControlVisible(card, '[data-validation-prop="pattern"]', pattern);
+    setCheckVisible(card, 'safeText', safeText);
+    setCheckVisible(card, 'futureOnly', date);
+    setCheckVisible(card, 'pastOnly', date);
+    setControlVisible(card, '[data-prop="placeholder"]', placeholder);
+    setControlVisible(card, '[data-prop="autocomplete"]', autocomplete);
+
+    var patternSelect = card.querySelector('[data-validation-prop="pattern"]');
+    if (patternSelect) {
+      Array.prototype.slice.call(patternSelect.options).forEach(function (option) {
+        if (option.value === '') option.textContent = 'Sin restricción especial';
+        if (option.value === 'digits') option.textContent = 'Solo números';
+      });
+    }
+
+    var advanced = card.querySelector('.headless-forms-advanced');
+    if (advanced) {
+      var help = advanced.querySelector('[data-editorial-context-help]');
+      if (!help) {
+        help = document.createElement('p');
+        help.className = 'description headless-forms-context-help';
+        help.setAttribute('data-editorial-context-help', '1');
+        var summary = advanced.querySelector('summary');
+        if (summary && summary.nextSibling) advanced.insertBefore(help, summary.nextSibling);
+        else advanced.appendChild(help);
+      }
+      help.textContent = contextHelpForType(type);
+    }
+
+    var conditionHead = card.querySelector('.headless-forms-conditions-head strong');
+    if (conditionHead) conditionHead.textContent = 'Mostrar u ocultar según otra respuesta';
+    var conditionWhen = card.querySelector('.headless-forms-conditions-head label');
+    if (conditionWhen) {
+      Array.prototype.slice.call(conditionWhen.childNodes).forEach(function (node) {
+        if (node.nodeType === Node.TEXT_NODE && node.nodeValue.indexOf('Si coincide:') !== -1) {
+          node.nodeValue = node.nodeValue.replace('Si coincide:', 'Cuando se cumpla:');
+        }
+      });
+    }
+  }
+
   function friendlyBuilders() {
     replaceExact('summary', 'Opciones, validación y condiciones', 'Reglas y opciones avanzadas');
 
     document.querySelectorAll('.headless-forms-field-card').forEach(function (card) {
+      friendlyTypeOptions(card);
+      technicalDetails(card);
+
       var name = card.querySelector('[data-prop="name"]');
       if (name) name.setAttribute('title', 'Identificador usado por el sitio web. Evita cambiarlo si el formulario ya está conectado.');
       var autocomplete = card.querySelector('[data-prop="autocomplete"]');
       if (autocomplete) autocomplete.setAttribute('placeholder', 'Ej.: email, name');
       var component = card.querySelector('[data-ui-prop="component"]');
       if (component) component.setAttribute('placeholder', 'Ej.: teléfono internacional');
+
+      applyFieldContext(card);
     });
 
     document.querySelectorAll('[data-kind="notification"] label').forEach(function (label) {
@@ -203,6 +373,13 @@
 
   function boot() {
     apply();
+
+    document.addEventListener('change', function (event) {
+      if (!event.target.matches('[data-kind="field"] [data-prop="type"]')) return;
+      var card = event.target.closest('.headless-forms-field-card');
+      if (card) applyFieldContext(card);
+    });
+
     var queued = false;
     var observer = new MutationObserver(function () {
       if (queued) return;
