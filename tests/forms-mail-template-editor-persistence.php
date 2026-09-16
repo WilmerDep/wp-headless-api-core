@@ -5,12 +5,19 @@
 
 define( 'ABSPATH', __DIR__ );
 
-$root = dirname( __DIR__ );
-$test = file_get_contents( $root . '/modules/Forms/Mail_Template_Test.php' );
-$js   = file_get_contents( $root . '/assets/admin/mail-template-test.js' );
+$root      = dirname( __DIR__ );
+$test      = file_get_contents( $root . '/modules/Forms/Mail_Template_Test.php' );
+$module    = file_get_contents( $root . '/modules/Forms/Forms_Module.php' );
+$bootstrap = file_get_contents( $root . '/wp-headless-api-core.php' );
+$js        = file_get_contents( $root . '/assets/admin/mail-template-test.js' );
 
 if ( false !== strpos( $test, '<form method="post"' ) || false !== strpos( $test, '</form>' ) ) {
 	fwrite( STDERR, "Mail Template test metabox must not render a nested form inside the WordPress post editor.\n" );
+	exit( 1 );
+}
+
+if ( false !== strpos( $module, 'Mail_Template_Test_Box' ) || false !== strpos( $bootstrap, 'Mail_Template_Test_Box' ) ) {
+	fwrite( STDERR, "Mail Template test UI must have a single implementation; obsolete replacement box detected.\n" );
 	exit( 1 );
 }
 
@@ -25,12 +32,14 @@ foreach (
 		"name=\"headless_mail_test_recipient\"",
 		'RECIPIENT_META_PREFIX',
 		"add_action( 'save_post_' . Forms_Post_Type::TEMPLATE_POST_TYPE, array( \$this, 'save_recipient_preference' ), 20, 2 )",
+		"add_filter( 'redirect_post_location', array( \$this, 'keep_editor_after_save' ), 20, 2 )",
 		'get_user_meta( get_current_user_id(), self::recipient_meta_key( $post->ID ), true )',
 		'update_user_meta( get_current_user_id(), self::recipient_meta_key( $template_id ), $recipient )',
 		'delete_user_meta( get_current_user_id(), self::recipient_meta_key( $post_id ) )',
 		'Forms_Admin::TEMPLATE_NONCE_NAME',
 		'Forms_Admin::TEMPLATE_NONCE_ACTION',
 		'$this->persist_recipient_preference( $template_id, $recipient );',
+		'get_edit_post_link( $post_id, \'raw\' )',
 	) as $needle
 ) {
 	if ( false === strpos( $test, $needle ) ) {
