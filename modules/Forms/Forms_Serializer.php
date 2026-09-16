@@ -29,11 +29,16 @@ final class Forms_Serializer {
 		$submission_available = $enabled && $delivery_ready && $this->mail_settings->is_ready();
 		$submission_available = (bool) apply_filters( 'headless_api_core_form_submission_available', $submission_available, $post, $notifications );
 		$slug                 = sanitize_title( $post->post_name );
-		$base_path            = Plugin::REST_NAMESPACE . '/forms/' . rawurlencode( $slug );
-		$fields               = $this->public_fields( Forms_Schema::normalize_fields( get_post_meta( $post->ID, Forms_Post_Type::META_FIELDS, true ) ) );
+		$key                  = Forms_Identity::get_key( $post );
+		if ( '' === $key ) {
+			$key = Forms_Identity::ensure_persisted_key( $post );
+		}
+		$base_path = Plugin::REST_NAMESPACE . '/forms/' . rawurlencode( $slug );
+		$fields    = $this->public_fields( Forms_Schema::normalize_fields( get_post_meta( $post->ID, Forms_Post_Type::META_FIELDS, true ) ) );
 
 		return array(
 			'id'             => (int) $post->ID,
+			'key'            => $key,
 			'slug'           => $slug,
 			'title'          => get_the_title( $post ),
 			'description'    => (string) get_post_meta( $post->ID, Forms_Post_Type::META_DESCRIPTION, true ),
