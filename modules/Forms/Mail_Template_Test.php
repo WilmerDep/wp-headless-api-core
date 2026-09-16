@@ -33,6 +33,23 @@ final class Mail_Template_Test {
 	public function register() {
 		add_action( 'add_meta_boxes_' . Forms_Post_Type::TEMPLATE_POST_TYPE, array( $this, 'add_meta_box' ) );
 		add_action( 'admin_post_' . self::ACTION, array( $this, 'handle' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+	}
+
+	/** Load the detached test-submit helper only on Mail Template editor screens. */
+	public function enqueue() {
+		$screen = get_current_screen();
+		if ( ! $screen || Forms_Post_Type::TEMPLATE_POST_TYPE !== $screen->post_type || 'post' !== $screen->base ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'headless-mail-template-test',
+			plugins_url( 'assets/admin/mail-template-test.js', HEADLESS_API_CORE_FILE ),
+			array(),
+			HEADLESS_API_CORE_VERSION,
+			true
+		);
 	}
 
 	/** Add the test delivery box next to the normal publish controls. */
@@ -60,9 +77,9 @@ final class Mail_Template_Test {
 			);
 		}
 
-		$user       = wp_get_current_user();
-		$recipient  = $user && is_email( $user->user_email ) ? $user->user_email : get_option( 'admin_email' );
-		$forms      = get_posts(
+		$user        = wp_get_current_user();
+		$recipient   = $user && is_email( $user->user_email ) ? $user->user_email : get_option( 'admin_email' );
+		$forms       = get_posts(
 			array(
 				'post_type'      => Forms_Post_Type::FORM_POST_TYPE,
 				'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
@@ -70,8 +87,8 @@ final class Mail_Template_Test {
 				'orderby'        => array( 'title' => 'ASC', 'ID' => 'ASC' ),
 			)
 		);
-		$is_ready   = $this->mail_settings->is_ready();
-		$is_publish = 'publish' === $post->post_status;
+		$is_ready    = $this->mail_settings->is_ready();
+		$is_publish  = 'publish' === $post->post_status;
 		$is_disabled = ! $is_ready || ! $is_publish;
 		?>
 		<p><?php esc_html_e( 'Envía la versión guardada de esta plantilla usando datos de ejemplo. No expone ni modifica las credenciales SMTP.', 'wp-headless-api-core' ); ?></p>
@@ -81,25 +98,29 @@ final class Mail_Template_Test {
 		<?php if ( ! $is_ready ) : ?>
 			<div class="notice notice-warning inline"><p><?php esc_html_e( 'Mail Core no está listo para enviar.', 'wp-headless-api-core' ); ?></p></div>
 		<?php endif; ?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>">
-			<input type="hidden" name="template_id" value="<?php echo esc_attr( $post->ID ); ?>">
-			<?php wp_nonce_field( self::NONCE_ACTION, self::NONCE_NAME ); ?>
+		<div
+			data-mail-template-test
+			data-action-url="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
+			data-action="<?php echo esc_attr( self::ACTION ); ?>"
+			data-template-id="<?php echo esc_attr( $post->ID ); ?>"
+			data-nonce-name="<?php echo esc_attr( self::NONCE_NAME ); ?>"
+			data-nonce="<?php echo esc_attr( wp_create_nonce( self::NONCE_ACTION ) ); ?>"
+		>
 			<p>
 				<label for="headless-mail-test-recipient"><strong><?php esc_html_e( 'Destinatario', 'wp-headless-api-core' ); ?></strong></label>
-				<input id="headless-mail-test-recipient" class="widefat" type="email" name="recipient" value="<?php echo esc_attr( $recipient ); ?>" required>
+				<input id="headless-mail-test-recipient" class="widefat" type="email" data-mail-test-recipient value="<?php echo esc_attr( $recipient ); ?>">
 			</p>
 			<p>
 				<label for="headless-mail-test-form"><strong><?php esc_html_e( 'Datos de ejemplo', 'wp-headless-api-core' ); ?></strong></label>
-				<select id="headless-mail-test-form" class="widefat" name="form_id">
+				<select id="headless-mail-test-form" class="widefat" data-mail-test-form>
 					<option value="0"><?php esc_html_e( 'Ejemplo genérico', 'wp-headless-api-core' ); ?></option>
 					<?php foreach ( $forms as $form ) : ?>
 						<option value="<?php echo esc_attr( $form->ID ); ?>"><?php echo esc_html( get_the_title( $form ) . ' — ' . $form->post_status ); ?></option>
 					<?php endforeach; ?>
 				</select>
 			</p>
-			<p><button type="submit" class="button button-secondary" <?php disabled( $is_disabled ); ?>><?php esc_html_e( 'Enviar prueba', 'wp-headless-api-core' ); ?></button></p>
-		</form>
+			<p><button type="button" class="button button-secondary" data-mail-test-send <?php disabled( $is_disabled ); ?>><?php esc_html_e( 'Enviar prueba', 'wp-headless-api-core' ); ?></button></p>
+		</div>
 		<?php
 	}
 
