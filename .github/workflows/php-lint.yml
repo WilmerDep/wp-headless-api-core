@@ -114,6 +114,9 @@ jobs:
       - name: Run Forms plain-language editorial UX contract test
         run: php tests/forms-editorial-ux-contract.php
 
+      - name: Run Forms contextual advanced-rules UX contract test
+        run: php tests/forms-contextual-rules-ux.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
