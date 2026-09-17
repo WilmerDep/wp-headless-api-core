@@ -90,6 +90,9 @@ jobs:
       - name: Run Mail capability/status contract test
         run: php tests/mail-status-contract.php
 
+      - name: Run Site Identity native branding contract test
+        run: php tests/site-identity-contract.php
+
       - name: Run Forms schema and validation contract test
         run: php tests/forms-schema-validation.php
 
