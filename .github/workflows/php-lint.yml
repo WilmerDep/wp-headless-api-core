@@ -120,6 +120,9 @@ jobs:
       - name: Run Forms dynamic discovery/API contract test
         run: php tests/forms-discovery-contract.php
 
+      - name: Run Forms list table and Quick Edit regression test
+        run: php tests/forms-list-table-quick-edit.php
+
       - name: Run Mail Template editor persistence regression test
         run: php tests/forms-mail-template-editor-persistence.php
 
