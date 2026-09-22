@@ -74,8 +74,10 @@ final class License_Gate {
 	/**
 	 * Resolve the canonical policy state from a verification result.
 	 *
-	 * A cryptographically untrusted token is always `untrusted`, regardless of
-	 * any status-shaped data that may exist elsewhere in storage.
+	 * A cryptographically untrusted token is always `untrusted`. A trusted token
+	 * whose offline tolerance has elapsed is a separate revalidation state: its
+	 * signed claims remain trustworthy, but ordinary public/premium capabilities
+	 * must not continue indefinitely without contacting the licensing service.
 	 *
 	 * @param array<string,mixed> $verification Verification result.
 	 * @return string
@@ -83,6 +85,10 @@ final class License_Gate {
 	private static function resolve_state( array $verification ) {
 		if ( empty( $verification['trusted'] ) ) {
 			return License_Policy::STATE_UNTRUSTED;
+		}
+
+		if ( 'OFFLINE_TOLERANCE_EXCEEDED' === ( $verification['code'] ?? null ) ) {
+			return License_Policy::STATE_OFFLINE_EXCEEDED;
 		}
 
 		$status = isset( $verification['status'] ) ? (string) $verification['status'] : '';
