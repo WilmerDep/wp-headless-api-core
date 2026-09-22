@@ -93,6 +93,9 @@ jobs:
       - name: Run Directory CSV import mode regression test
         run: php tests/directory-csv-mode.php
 
+      - name: Run Hero and Directory licensing enforcement regression test
+        run: php tests/public-module-licensing-enforcement.php
+
       - name: Resolve plugin version
         id: plugin
         shell: bash
