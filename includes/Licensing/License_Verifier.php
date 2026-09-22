@@ -11,14 +11,64 @@ defined( 'ABSPATH' ) || exit;
 
 final class License_Verifier {
 	/**
-	 * Verify compact JWS token signature and contract-v1 claims.
+	 * Verify compact JWS trust and then apply temporal operational rules.
 	 *
-	 * @param string              $token        Compact JWS token.
-	 * @param array<string,string> $public_keys  Map of kid => raw public key hex.
-	 * @param array<string,mixed>  $context      Expected domain/instance and optional now timestamp.
+	 * A token can remain cryptographically trusted after it stops being
+	 * operational. This distinction lets policy code safely read signed claims
+	 * (for example critical Forms/Mail entitlements) without treating stale or
+	 * expired public capabilities as active.
+	 *
+	 * @param string               $token       Compact JWS token.
+	 * @param array<string,string> $public_keys Map of kid => raw public key hex.
+	 * @param array<string,mixed>  $context     Expected domain/instance and optional now timestamp.
 	 * @return array<string,mixed>
 	 */
 	public static function verify( $token, array $public_keys, array $context = array() ) {
+		$result = self::verify_trust( $token, $public_keys, $context );
+		if ( empty( $result['trusted'] ) ) {
+			return $result;
+		}
+
+		$payload = $result['payload'];
+		$now     = isset( $context['now'] ) ? (int) $context['now'] : time();
+
+		if ( $now > strtotime( $payload['graceUntil'] ) ) {
+			$result['valid']       = false;
+			$result['operational'] = false;
+			$result['status']      = 'expired';
+			$result['code']        = 'LICENSE_EXPIRED';
+			$result['message']     = 'License grace period has expired.';
+			return $result;
+		}
+
+		if ( $now > strtotime( $payload['offlineUntil'] ) ) {
+			$result['valid']       = false;
+			$result['operational'] = false;
+			$result['code']        = 'OFFLINE_TOLERANCE_EXCEEDED';
+			$result['message']     = 'Offline tolerance window has expired.';
+			return $result;
+		}
+
+		$result['valid']       = true;
+		$result['operational'] = true;
+		$result['code']        = null;
+		$result['message']     = null;
+		return $result;
+	}
+
+	/**
+	 * Verify cryptographic trust, contract shape and installation binding only.
+	 *
+	 * Temporal claims are parsed and a lifecycle status is reported, but
+	 * `offlineUntil` and `graceUntil` do not destroy trust in an otherwise
+	 * authentic signed payload.
+	 *
+	 * @param string               $token       Compact JWS token.
+	 * @param array<string,string> $public_keys Map of kid => raw public key hex.
+	 * @param array<string,mixed>  $context     Expected domain/instance and optional now timestamp.
+	 * @return array<string,mixed>
+	 */
+	public static function verify_trust( $token, array $public_keys, array $context = array() ) {
 		if ( ! function_exists( 'sodium_crypto_sign_verify_detached' ) ) {
 			return self::failure( 'VERIFICATION_UNAVAILABLE', 'Ed25519 verification requires Sodium.' );
 		}
@@ -33,8 +83,8 @@ final class License_Verifier {
 		}
 
 		list( $header_b64, $payload_b64, $signature_b64 ) = $parts;
-		$header = self::decode_json_part( $header_b64 );
-		$payload = self::decode_json_part( $payload_b64 );
+		$header    = self::decode_json_part( $header_b64 );
+		$payload   = self::decode_json_part( $payload_b64 );
 		$signature = self::base64url_decode( $signature_b64 );
 
 		if ( ! is_array( $header ) || ! is_array( $payload ) || false === $signature ) {
@@ -85,15 +135,6 @@ final class License_Verifier {
 			}
 		}
 
-		$now = isset( $context['now'] ) ? (int) $context['now'] : time();
-		if ( $now > strtotime( $payload['graceUntil'] ) ) {
-			return self::failure( 'LICENSE_EXPIRED', 'License grace period has expired.' );
-		}
-
-		if ( $now > strtotime( $payload['offlineUntil'] ) ) {
-			return self::failure( 'OFFLINE_TOLERANCE_EXCEEDED', 'Offline tolerance window has expired.' );
-		}
-
 		if ( isset( $context['domain'] ) && self::normalize_domain( $context['domain'] ) !== self::normalize_domain( $payload['domain'] ) ) {
 			return self::failure( 'DOMAIN_MISMATCH', 'Token domain does not match this site.' );
 		}
@@ -102,23 +143,35 @@ final class License_Verifier {
 			return self::failure( 'INSTANCE_MISMATCH', 'Token instanceId does not match this installation.' );
 		}
 
-		$status = $now > strtotime( $payload['expiresAt'] ) ? 'grace_period' : 'active';
+		$now = isset( $context['now'] ) ? (int) $context['now'] : time();
+		if ( $now > strtotime( $payload['graceUntil'] ) ) {
+			$status = 'expired';
+		} elseif ( $now > strtotime( $payload['expiresAt'] ) ) {
+			$status = 'grace_period';
+		} else {
+			$status = 'active';
+		}
 
 		return array(
-			'valid'   => true,
-			'code'    => null,
-			'status'  => $status,
-			'header'  => $header,
-			'payload' => $payload,
+			'trusted'     => true,
+			'valid'       => false,
+			'operational' => false,
+			'code'        => null,
+			'message'     => null,
+			'status'      => $status,
+			'header'      => $header,
+			'payload'     => $payload,
 		);
 	}
 
 	/** @return array<string,mixed> */
 	private static function failure( $code, $message ) {
 		return array(
-			'valid'   => false,
-			'code'    => $code,
-			'message' => $message,
+			'trusted'     => false,
+			'valid'       => false,
+			'operational' => false,
+			'code'        => $code,
+			'message'     => $message,
 		);
 	}
 
