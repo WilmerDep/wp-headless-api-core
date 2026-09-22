@@ -59,6 +59,23 @@ assert_policy(
 	'expired public content is restricted with renewal code'
 );
 
+$public_offline = License_Policy::evaluate(
+	License_Policy::STATE_OFFLINE_EXCEEDED,
+	License_Policy::CAPABILITY_PUBLIC_CONTENT,
+	true
+);
+assert_policy(
+	false === $public_offline['allowed'] && 'LICENSE_REVALIDATION_REQUIRED' === $public_offline['code'],
+	'offline tolerance exceeded restricts public content until revalidation'
+);
+
+$critical_offline = License_Policy::evaluate(
+	License_Policy::STATE_OFFLINE_EXCEEDED,
+	License_Policy::CAPABILITY_CRITICAL_TRANSACTION,
+	true
+);
+assert_policy( true === $critical_offline['allowed'], 'critical transaction survives offline revalidation state' );
+
 $critical_expired = License_Policy::evaluate(
 	License_Policy::STATE_EXPIRED,
 	License_Policy::CAPABILITY_CRITICAL_TRANSACTION,
