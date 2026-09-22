@@ -95,6 +95,23 @@ namespace HeadlessApiCore\Core {
 	}
 }
 
+namespace HeadlessApiCore\Licensing {
+	class License_Policy {
+		const CAPABILITY_PUBLIC_CONTENT = 'public_content';
+	}
+
+	class License_Gate {
+		public static function evaluate( $capability, $entitlement = null ) {
+			unset( $capability, $entitlement );
+			return array(
+				'allowed' => true,
+				'code'    => null,
+				'status'  => 'active',
+			);
+		}
+	}
+}
+
 namespace HeadlessApiCore\Modules\News {
 	class News_Serializer {
 		public function summary( $post ) {
