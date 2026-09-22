@@ -95,7 +95,12 @@ final class License_Manager {
 		$state = License_Storage::get();
 		$token = isset( $state['token'] ) && is_string( $state['token'] ) ? $state['token'] : '';
 		if ( '' === $token ) {
-			return array( 'valid' => false, 'code' => 'TOKEN_MISSING' );
+			return array(
+				'trusted'     => false,
+				'valid'       => false,
+				'operational' => false,
+				'code'        => 'TOKEN_MISSING',
+			);
 		}
 
 		return License_Verifier::verify(
@@ -109,13 +114,23 @@ final class License_Manager {
 	}
 
 	/**
-	 * Whether the current stored token is locally verified and operational.
+	 * Whether the current token is cryptographically trusted and bound to this site.
+	 *
+	 * @return bool
+	 */
+	public static function is_trusted() {
+		$result = self::verify_stored();
+		return ! empty( $result['trusted'] );
+	}
+
+	/**
+	 * Whether the current stored token is both trusted and operational.
 	 *
 	 * @return bool
 	 */
 	public static function is_operational() {
 		$result = self::verify_stored();
-		return ! empty( $result['valid'] );
+		return ! empty( $result['trusted'] ) && ! empty( $result['operational'] );
 	}
 
 	/** @return array<string,mixed>|\WP_Error */
@@ -134,13 +149,15 @@ final class License_Manager {
 			)
 		);
 
-		if ( empty( $verification['valid'] ) ) {
+		if ( empty( $verification['trusted'] ) ) {
 			License_Storage::set(
 				array(
-					'token'         => $token,
-					'verified'      => false,
-					'verification'  => $verification,
-					'updatedAt'     => gmdate( 'c' ),
+					'token'        => $token,
+					'trusted'      => false,
+					'operational'  => false,
+					'verified'     => false,
+					'verification' => $verification,
+					'updatedAt'    => gmdate( 'c' ),
 				)
 			);
 			return new \WP_Error(
@@ -153,10 +170,13 @@ final class License_Manager {
 		License_Storage::set(
 			array(
 				'token'        => $token,
+				'trusted'      => true,
+				'operational'  => ! empty( $verification['operational'] ),
 				'verified'     => true,
-				'status'       => $verification['status'],
+				'status'       => isset( $verification['status'] ) ? $verification['status'] : 'untrusted',
 				'payload'      => $verification['payload'],
 				'header'       => $verification['header'],
+				'verification' => $verification,
 				'license'      => isset( $response['license'] ) && is_array( $response['license'] ) ? $response['license'] : array(),
 				'updatedAt'    => gmdate( 'c' ),
 			)
