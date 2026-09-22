@@ -24,6 +24,7 @@ require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Entitlements.p
 require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Policy.php';
 require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Client.php';
 require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Manager.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Gate.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/News/News_Serializer.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/News/News_Controller.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/News/News_Revalidation.php';
