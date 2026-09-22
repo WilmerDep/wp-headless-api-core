@@ -14,17 +14,18 @@ namespace HeadlessApiCore\Licensing;
 defined( 'ABSPATH' ) || exit;
 
 final class License_Policy {
-	const CAPABILITY_ADMINISTRATIVE        = 'administrative';
-	const CAPABILITY_PUBLIC_CONTENT        = 'public_content';
-	const CAPABILITY_CRITICAL_TRANSACTION  = 'critical_transactional';
-	const CAPABILITY_PREMIUM               = 'premium_capability';
+	const CAPABILITY_ADMINISTRATIVE       = 'administrative';
+	const CAPABILITY_PUBLIC_CONTENT       = 'public_content';
+	const CAPABILITY_CRITICAL_TRANSACTION = 'critical_transactional';
+	const CAPABILITY_PREMIUM              = 'premium_capability';
 
-	const STATE_ACTIVE       = 'active';
-	const STATE_GRACE        = 'grace_period';
-	const STATE_EXPIRED      = 'expired';
-	const STATE_SUSPENDED    = 'suspended';
-	const STATE_REVOKED      = 'revoked';
-	const STATE_UNTRUSTED    = 'untrusted';
+	const STATE_ACTIVE           = 'active';
+	const STATE_GRACE            = 'grace_period';
+	const STATE_EXPIRED          = 'expired';
+	const STATE_SUSPENDED        = 'suspended';
+	const STATE_REVOKED          = 'revoked';
+	const STATE_OFFLINE_EXCEEDED = 'offline_tolerance_exceeded';
+	const STATE_UNTRUSTED        = 'untrusted';
 
 	/**
 	 * Evaluate whether a capability should be available.
@@ -59,7 +60,17 @@ final class License_Policy {
 		}
 
 		if ( self::CAPABILITY_CRITICAL_TRANSACTION === $capability ) {
-			if ( in_array( $state, array( self::STATE_ACTIVE, self::STATE_GRACE, self::STATE_EXPIRED, self::STATE_SUSPENDED ), true ) ) {
+			if ( in_array(
+				$state,
+				array(
+					self::STATE_ACTIVE,
+					self::STATE_GRACE,
+					self::STATE_EXPIRED,
+					self::STATE_SUSPENDED,
+					self::STATE_OFFLINE_EXCEEDED,
+				),
+				true
+			) ) {
 				$notice = self::STATE_ACTIVE === $state ? null : 'warning';
 				return self::decision( true, 'allow', null, $notice );
 			}
@@ -74,6 +85,10 @@ final class License_Policy {
 
 			if ( self::STATE_GRACE === $state ) {
 				return self::decision( true, 'allow', null, 'warning' );
+			}
+
+			if ( self::STATE_OFFLINE_EXCEEDED === $state ) {
+				return self::decision( false, 'restrict', 'LICENSE_REVALIDATION_REQUIRED', 'warning' );
 			}
 
 			if ( self::STATE_SUSPENDED === $state ) {
@@ -107,6 +122,7 @@ final class License_Policy {
 			self::STATE_EXPIRED,
 			self::STATE_SUSPENDED,
 			self::STATE_REVOKED,
+			self::STATE_OFFLINE_EXCEEDED,
 			self::STATE_UNTRUSTED,
 		);
 
@@ -132,7 +148,16 @@ final class License_Policy {
 			return null;
 		}
 
-		if ( in_array( $state, array( self::STATE_GRACE, self::STATE_EXPIRED, self::STATE_SUSPENDED ), true ) ) {
+		if ( in_array(
+			$state,
+			array(
+				self::STATE_GRACE,
+				self::STATE_EXPIRED,
+				self::STATE_SUSPENDED,
+				self::STATE_OFFLINE_EXCEEDED,
+			),
+			true
+		) ) {
 			return 'warning';
 		}
 
