@@ -19,6 +19,11 @@ final class License_Manager {
 	);
 
 	/**
+	 * Product identity expected in every signed token accepted by this plugin.
+	 */
+	private const PRODUCT_KEY = 'wp-headless-api-core';
+
+	/**
 	 * Initialize licensing infrastructure without gating feature modules yet.
 	 *
 	 * @return void
@@ -107,6 +112,7 @@ final class License_Manager {
 			$token,
 			self::PUBLIC_KEYS,
 			array(
+				'product'    => self::PRODUCT_KEY,
 				'domain'     => self::current_domain(),
 				'instanceId' => License_Instance::get(),
 			)
@@ -144,6 +150,7 @@ final class License_Manager {
 			$token,
 			self::PUBLIC_KEYS,
 			array(
+				'product'    => self::PRODUCT_KEY,
 				'domain'     => $domain,
 				'instanceId' => License_Instance::get(),
 			)
