@@ -33,6 +33,9 @@ jobs:
       - name: Run Licensing contract v1 regression test
         run: php tests/licensing-contract-v1.php
 
+      - name: Run Licensing trust and operational state regression test
+        run: php tests/licensing-trust-state.php
+
       - name: Run Licensing policy regression test
         run: php tests/licensing-policy.php
 
