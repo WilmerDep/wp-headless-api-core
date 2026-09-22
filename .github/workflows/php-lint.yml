@@ -51,6 +51,9 @@ jobs:
       - name: Run News public visibility regression test
         run: php tests/news-public-visibility.php
 
+      - name: Run News licensing enforcement regression test
+        run: php tests/news-licensing-enforcement.php
+
       - name: Run News revalidation HMAC signature test
         run: php tests/news-revalidation-signature.php
 
@@ -122,6 +125,6 @@ jobs:
       - name: Upload installable plugin ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: wp-headless-api-core-v${{ steps.plugin.outputs.version }}
+          name: wp-headless-api-core-v${{ steps.plugin.outputs.outputs.version }}
           path: build/wp-headless-api-core-v${{ steps.plugin.outputs.version }}.zip
           if-no-files-found: error
