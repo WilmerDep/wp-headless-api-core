@@ -7,6 +7,7 @@
 
 namespace HeadlessApiCore\Core;
 
+use HeadlessApiCore\Licensing\License_Manager;
 use HeadlessApiCore\Modules\Directory\Directory_Module;
 use HeadlessApiCore\Modules\Hero\Hero_Module;
 use HeadlessApiCore\Modules\News\News_Module;
@@ -38,6 +39,9 @@ final class Plugin {
 		}
 
 		self::$booted = true;
+
+		// Licensing infrastructure boots before feature modules, but does not gate them yet.
+		License_Manager::boot();
 
 		$health_controller = new Health_Controller();
 		$health_controller->register();
