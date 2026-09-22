@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class License_Gate {
 	/**
-	 * Evaluate a licensed capability using trust, state, policy and entitlement.
+	 * Evaluate a licensed capability using the currently stored token.
 	 *
 	 * @param string      $capability  License_Policy capability class.
 	 * @param string|null $entitlement Optional entitlement slug.
@@ -20,14 +20,36 @@ final class License_Gate {
 	public static function evaluate( $capability, $entitlement = null ) {
 		$verification = License_Manager::verify_stored();
 		$trusted      = ! empty( $verification['trusted'] );
-		$state        = self::resolve_state( $verification );
 
 		$has_entitlement = true;
 		if ( null !== $entitlement && '' !== (string) $entitlement ) {
 			$has_entitlement = $trusted && License_Entitlements::has( (string) $entitlement );
 		}
 
-		$decision = License_Policy::evaluate( $state, $capability, $has_entitlement );
+		return self::decide( $verification, $capability, $has_entitlement, $entitlement );
+	}
+
+	/**
+	 * Pure decision boundary for an already verified token result.
+	 *
+	 * This keeps module policy deterministic and directly testable without
+	 * bypassing production verification: normal callers should use evaluate().
+	 *
+	 * @param array<string,mixed> $verification    Verification result.
+	 * @param string              $capability      Capability class.
+	 * @param bool                $has_entitlement Whether the signed payload grants the feature.
+	 * @param string|null         $entitlement     Optional entitlement slug for diagnostics.
+	 * @return array<string,mixed>
+	 */
+	public static function decide( array $verification, $capability, $has_entitlement = true, $entitlement = null ) {
+		$trusted = ! empty( $verification['trusted'] );
+		$state   = self::resolve_state( $verification );
+
+		if ( ! $trusted ) {
+			$has_entitlement = false;
+		}
+
+		$decision = License_Policy::evaluate( $state, $capability, (bool) $has_entitlement );
 
 		$decision['trusted']     = $trusted;
 		$decision['operational'] = ! empty( $verification['operational'] );
