@@ -45,6 +45,12 @@ $expired = array(
 	'operational' => false,
 	'status' => 'expired',
 );
+$offline_exceeded = array(
+	'trusted' => true,
+	'operational' => false,
+	'status' => 'active',
+	'code' => 'OFFLINE_TOLERANCE_EXCEEDED',
+);
 $untrusted = array(
 	'trusted' => false,
 	'operational' => false,
@@ -64,6 +70,13 @@ gate_assert( ! empty( $decision['allowed'] ) && 'warning' === $decision['noticeL
 $decision = License_Gate::decide( $expired, License_Policy::CAPABILITY_PUBLIC_CONTENT, true, 'news' );
 gate_assert( empty( $decision['allowed'] ) && 'LICENSE_RENEWAL_REQUIRED' === $decision['code'], 'expired public content is restricted after grace' );
 gate_assert( true === $decision['trusted'] && false === $decision['operational'], 'expired token can remain trusted while non-operational' );
+
+$decision = License_Gate::decide( $offline_exceeded, License_Policy::CAPABILITY_PUBLIC_CONTENT, true, 'news' );
+gate_assert( empty( $decision['allowed'] ) && 'LICENSE_REVALIDATION_REQUIRED' === $decision['code'], 'offline tolerance exceeded restricts public content until revalidation' );
+gate_assert( 'offline_tolerance_exceeded' === $decision['status'], 'offline tolerance receives a distinct trusted policy state' );
+
+$decision = License_Gate::decide( $offline_exceeded, License_Policy::CAPABILITY_CRITICAL_TRANSACTION, true, 'forms' );
+gate_assert( ! empty( $decision['allowed'] ), 'critical transaction survives offline revalidation state' );
 
 $decision = License_Gate::decide( $expired, License_Policy::CAPABILITY_CRITICAL_TRANSACTION, true, 'forms' );
 gate_assert( ! empty( $decision['allowed'] ) && 'allow' === $decision['mode'], 'critical transaction survives ordinary expiration' );
