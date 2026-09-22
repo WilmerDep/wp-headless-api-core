@@ -20,7 +20,7 @@ final class License_Verifier {
 	 *
 	 * @param string               $token       Compact JWS token.
 	 * @param array<string,string> $public_keys Map of kid => raw public key hex.
-	 * @param array<string,mixed>  $context     Expected domain/instance and optional now timestamp.
+	 * @param array<string,mixed>  $context     Expected product/domain/instance and optional now timestamp.
 	 * @return array<string,mixed>
 	 */
 	public static function verify( $token, array $public_keys, array $context = array() ) {
@@ -65,7 +65,7 @@ final class License_Verifier {
 	 *
 	 * @param string               $token       Compact JWS token.
 	 * @param array<string,string> $public_keys Map of kid => raw public key hex.
-	 * @param array<string,mixed>  $context     Expected domain/instance and optional now timestamp.
+	 * @param array<string,mixed>  $context     Expected product/domain/instance and optional now timestamp.
 	 * @return array<string,mixed>
 	 */
 	public static function verify_trust( $token, array $public_keys, array $context = array() ) {
@@ -91,16 +91,25 @@ final class License_Verifier {
 			return self::failure( 'TOKEN_MALFORMED', 'Token contains invalid base64url or JSON data.' );
 		}
 
+		if ( SODIUM_CRYPTO_SIGN_BYTES !== strlen( $signature ) ) {
+			return self::failure( 'TOKEN_MALFORMED', 'Ed25519 signature must be exactly 64 bytes.' );
+		}
+
 		if ( 'EdDSA' !== ( $header['alg'] ?? null ) || 'PHOLIO-LICENSE' !== ( $header['typ'] ?? null ) ) {
 			return self::failure( 'TOKEN_MALFORMED', 'Unsupported token header.' );
 		}
 
-		$kid = isset( $header['kid'] ) && is_string( $header['kid'] ) ? $header['kid'] : '';
+		$kid = isset( $header['kid'] ) && is_string( $header['kid'] ) ? trim( $header['kid'] ) : '';
 		if ( '' === $kid || ! isset( $public_keys[ $kid ] ) ) {
 			return self::failure( 'UNKNOWN_KEY_ID', 'Unknown signing key identifier.' );
 		}
 
-		$raw_public_key = hex2bin( $public_keys[ $kid ] );
+		$key_hex = $public_keys[ $kid ];
+		if ( ! is_string( $key_hex ) || 1 !== preg_match( '/\A[0-9a-fA-F]{64}\z/', $key_hex ) ) {
+			return self::failure( 'UNKNOWN_KEY_ID', 'Configured public key is invalid.' );
+		}
+
+		$raw_public_key = hex2bin( $key_hex );
 		if ( false === $raw_public_key || SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES !== strlen( $raw_public_key ) ) {
 			return self::failure( 'UNKNOWN_KEY_ID', 'Configured public key is invalid.' );
 		}
@@ -121,18 +130,34 @@ final class License_Verifier {
 		}
 
 		if ( 1 !== $payload['version'] ) {
-			return self::failure( 'TOKEN_MALFORMED', 'Unsupported token version.' );
+			return self::failure( 'UNSUPPORTED_TOKEN_VERSION', 'Unsupported token version.' );
+		}
+
+		$string_claims = array( 'licenseId', 'product', 'customerId', 'plan', 'instanceId', 'domain' );
+		foreach ( $string_claims as $claim ) {
+			if ( ! is_string( $payload[ $claim ] ) || '' === trim( $payload[ $claim ] ) ) {
+				return self::failure( 'TOKEN_MALFORMED', 'Invalid string claim: ' . $claim );
+			}
 		}
 
 		if ( ! is_array( $payload['entitlements'] ) ) {
 			return self::failure( 'TOKEN_MALFORMED', 'Entitlements must be an array.' );
 		}
+		foreach ( $payload['entitlements'] as $entitlement ) {
+			if ( ! is_string( $entitlement ) || '' === trim( $entitlement ) ) {
+				return self::failure( 'TOKEN_MALFORMED', 'Entitlements must contain non-empty strings only.' );
+			}
+		}
 
 		$dates = array( 'issuedAt', 'refreshAfter', 'offlineUntil', 'expiresAt', 'graceUntil' );
 		foreach ( $dates as $claim ) {
-			if ( ! is_string( $payload[ $claim ] ) || false === strtotime( $payload[ $claim ] ) ) {
+			if ( ! is_string( $payload[ $claim ] ) || '' === trim( $payload[ $claim ] ) || false === strtotime( $payload[ $claim ] ) ) {
 				return self::failure( 'TOKEN_MALFORMED', 'Invalid timestamp claim: ' . $claim );
 			}
+		}
+
+		if ( isset( $context['product'] ) && (string) $context['product'] !== $payload['product'] ) {
+			return self::failure( 'PRODUCT_MISMATCH', 'Token product does not match this plugin.' );
 		}
 
 		if ( isset( $context['domain'] ) && self::normalize_domain( $context['domain'] ) !== self::normalize_domain( $payload['domain'] ) ) {
@@ -189,6 +214,10 @@ final class License_Verifier {
 	/** @return string|false */
 	private static function base64url_decode( $value ) {
 		if ( ! is_string( $value ) || '' === $value ) {
+			return false;
+		}
+
+		if ( 1 !== preg_match( '/\A[A-Za-z0-9_-]+\z/', $value ) ) {
 			return false;
 		}
 
