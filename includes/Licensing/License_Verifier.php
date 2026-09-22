@@ -1,0 +1,160 @@
+<?php
+/**
+ * PholioDev License Token Contract v1 verifier.
+ *
+ * @package HeadlessApiCore
+ */
+
+namespace HeadlessApiCore\Licensing;
+
+defined( 'ABSPATH' ) || exit;
+
+final class License_Verifier {
+	/**
+	 * Verify compact JWS token signature and contract-v1 claims.
+	 *
+	 * @param string              $token        Compact JWS token.
+	 * @param array<string,string> $public_keys  Map of kid => raw public key hex.
+	 * @param array<string,mixed>  $context      Expected domain/instance and optional now timestamp.
+	 * @return array<string,mixed>
+	 */
+	public static function verify( $token, array $public_keys, array $context = array() ) {
+		if ( ! function_exists( 'sodium_crypto_sign_verify_detached' ) ) {
+			return self::failure( 'VERIFICATION_UNAVAILABLE', 'Ed25519 verification requires Sodium.' );
+		}
+
+		if ( ! is_string( $token ) || '' === $token ) {
+			return self::failure( 'TOKEN_MALFORMED', 'Token is empty or invalid.' );
+		}
+
+		$parts = explode( '.', $token );
+		if ( 3 !== count( $parts ) ) {
+			return self::failure( 'TOKEN_MALFORMED', 'Token must contain three dot-separated parts.' );
+		}
+
+		list( $header_b64, $payload_b64, $signature_b64 ) = $parts;
+		$header = self::decode_json_part( $header_b64 );
+		$payload = self::decode_json_part( $payload_b64 );
+		$signature = self::base64url_decode( $signature_b64 );
+
+		if ( ! is_array( $header ) || ! is_array( $payload ) || false === $signature ) {
+			return self::failure( 'TOKEN_MALFORMED', 'Token contains invalid base64url or JSON data.' );
+		}
+
+		if ( 'EdDSA' !== ( $header['alg'] ?? null ) || 'PHOLIO-LICENSE' !== ( $header['typ'] ?? null ) ) {
+			return self::failure( 'TOKEN_MALFORMED', 'Unsupported token header.' );
+		}
+
+		$kid = isset( $header['kid'] ) && is_string( $header['kid'] ) ? $header['kid'] : '';
+		if ( '' === $kid || ! isset( $public_keys[ $kid ] ) ) {
+			return self::failure( 'UNKNOWN_KEY_ID', 'Unknown signing key identifier.' );
+		}
+
+		$raw_public_key = hex2bin( $public_keys[ $kid ] );
+		if ( false === $raw_public_key || SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES !== strlen( $raw_public_key ) ) {
+			return self::failure( 'UNKNOWN_KEY_ID', 'Configured public key is invalid.' );
+		}
+
+		$signing_input = $header_b64 . '.' . $payload_b64;
+		if ( ! sodium_crypto_sign_verify_detached( $signature, $signing_input, $raw_public_key ) ) {
+			return self::failure( 'INVALID_SIGNATURE', 'Token signature verification failed.' );
+		}
+
+		$required = array(
+			'version', 'licenseId', 'product', 'customerId', 'plan', 'instanceId', 'domain',
+			'entitlements', 'issuedAt', 'refreshAfter', 'offlineUntil', 'expiresAt', 'graceUntil',
+		);
+		foreach ( $required as $claim ) {
+			if ( ! array_key_exists( $claim, $payload ) ) {
+				return self::failure( 'TOKEN_MALFORMED', 'Missing required claim: ' . $claim );
+			}
+		}
+
+		if ( 1 !== $payload['version'] ) {
+			return self::failure( 'TOKEN_MALFORMED', 'Unsupported token version.' );
+		}
+
+		if ( ! is_array( $payload['entitlements'] ) ) {
+			return self::failure( 'TOKEN_MALFORMED', 'Entitlements must be an array.' );
+		}
+
+		$dates = array( 'issuedAt', 'refreshAfter', 'offlineUntil', 'expiresAt', 'graceUntil' );
+		foreach ( $dates as $claim ) {
+			if ( ! is_string( $payload[ $claim ] ) || false === strtotime( $payload[ $claim ] ) ) {
+				return self::failure( 'TOKEN_MALFORMED', 'Invalid timestamp claim: ' . $claim );
+			}
+		}
+
+		$now = isset( $context['now'] ) ? (int) $context['now'] : time();
+		if ( $now > strtotime( $payload['graceUntil'] ) ) {
+			return self::failure( 'LICENSE_EXPIRED', 'License grace period has expired.' );
+		}
+
+		if ( $now > strtotime( $payload['offlineUntil'] ) ) {
+			return self::failure( 'OFFLINE_TOLERANCE_EXCEEDED', 'Offline tolerance window has expired.' );
+		}
+
+		if ( isset( $context['domain'] ) && self::normalize_domain( $context['domain'] ) !== self::normalize_domain( $payload['domain'] ) ) {
+			return self::failure( 'DOMAIN_MISMATCH', 'Token domain does not match this site.' );
+		}
+
+		if ( isset( $context['instanceId'] ) && $context['instanceId'] !== $payload['instanceId'] ) {
+			return self::failure( 'INSTANCE_MISMATCH', 'Token instanceId does not match this installation.' );
+		}
+
+		$status = $now > strtotime( $payload['expiresAt'] ) ? 'grace_period' : 'active';
+
+		return array(
+			'valid'   => true,
+			'code'    => null,
+			'status'  => $status,
+			'header'  => $header,
+			'payload' => $payload,
+		);
+	}
+
+	/** @return array<string,mixed> */
+	private static function failure( $code, $message ) {
+		return array(
+			'valid'   => false,
+			'code'    => $code,
+			'message' => $message,
+		);
+	}
+
+	/** @return array<string,mixed>|null */
+	private static function decode_json_part( $value ) {
+		$decoded = self::base64url_decode( $value );
+		if ( false === $decoded ) {
+			return null;
+		}
+
+		$data = json_decode( $decoded, true );
+		return is_array( $data ) ? $data : null;
+	}
+
+	/** @return string|false */
+	private static function base64url_decode( $value ) {
+		if ( ! is_string( $value ) || '' === $value ) {
+			return false;
+		}
+
+		$remainder = strlen( $value ) % 4;
+		if ( 0 !== $remainder ) {
+			$value .= str_repeat( '=', 4 - $remainder );
+		}
+
+		return base64_decode( strtr( $value, '-_', '+/' ), true );
+	}
+
+	/** @return string */
+	private static function normalize_domain( $domain ) {
+		$domain = strtolower( trim( (string) $domain ) );
+		if ( false !== strpos( $domain, '://' ) ) {
+			$host = wp_parse_url( $domain, PHP_URL_HOST );
+			return is_string( $host ) ? strtolower( $host ) : $domain;
+		}
+
+		return preg_replace( '/[:\/].*$/', '', $domain );
+	}
+}
