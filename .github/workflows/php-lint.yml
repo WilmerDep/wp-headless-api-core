@@ -39,6 +39,9 @@ jobs:
       - name: Run Licensing policy regression test
         run: php tests/licensing-policy.php
 
+      - name: Run Licensing gate regression test
+        run: php tests/licensing-gate.php
+
       - name: Run isolated News SEO fallback test
         run: php tests/news-seo-fallback.php
 
