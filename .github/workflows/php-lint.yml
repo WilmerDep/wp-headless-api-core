@@ -125,6 +125,6 @@ jobs:
       - name: Upload installable plugin ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: wp-headless-api-core-v${{ steps.plugin.outputs.outputs.version }}
+          name: wp-headless-api-core-v${{ steps.plugin.outputs.version }}
           path: build/wp-headless-api-core-v${{ steps.plugin.outputs.version }}.zip
           if-no-files-found: error
