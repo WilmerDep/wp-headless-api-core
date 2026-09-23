@@ -19,45 +19,27 @@ use WP_REST_Server;
 defined( 'ABSPATH' ) || exit;
 
 final class News_Controller {
-	/**
-	 * Default collection page size.
-	 */
+	/** Default collection page size. */
 	const DEFAULT_PER_PAGE = 12;
 
-	/**
-	 * Maximum collection page size.
-	 */
+	/** Maximum collection page size. */
 	const MAX_PER_PAGE = 50;
 
-	/**
-	 * Serializer instance.
-	 *
-	 * @var News_Serializer
-	 */
+	/** @var News_Serializer */
 	private $serializer;
 
-	/**
-	 * @param News_Serializer $serializer News serializer.
-	 */
+	/** @param News_Serializer $serializer News serializer. */
 	public function __construct( News_Serializer $serializer ) {
 		$this->serializer = $serializer;
 	}
 
-	/**
-	 * Register WordPress hooks for this controller.
-	 *
-	 * @return void
-	 */
+	/** Register WordPress hooks for this controller. */
 	public function register() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 		add_filter( 'rest_post_dispatch', array( $this, 'prevent_news_http_cache' ), 10, 3 );
 	}
 
-	/**
-	 * Register News REST routes.
-	 *
-	 * @return void
-	 */
+	/** Register News REST routes. */
 	public function register_routes() {
 		register_rest_route(
 			Plugin::REST_NAMESPACE,
@@ -108,33 +90,12 @@ final class News_Controller {
 		);
 	}
 
-	/**
-	 * Public read-only endpoints require no authentication.
-	 *
-	 * Licensing is enforced inside the response boundary rather than through
-	 * WordPress authentication so Consumers receive an explicit licensing code.
-	 *
-	 * @return bool
-	 */
+	/** Public read-only endpoints require no authentication. */
 	public function public_permission() {
 		return true;
 	}
 
-	/**
-	 * Keep the Provider REST surface authoritative.
-	 *
-	 * News caching belongs at the Consumer boundary where lifecycle webhooks can
-	 * invalidate it intentionally. Browser, reverse-proxy or host-level caching
-	 * of the Provider itself can otherwise leave a public collection temporarily
-	 * inconsistent with WordPress editorial state.
-	 *
-	 * This applies to successful News responses and licensing/error responses.
-	 *
-	 * @param mixed           $response REST response.
-	 * @param WP_REST_Server  $server   REST server.
-	 * @param WP_REST_Request $request  Current request.
-	 * @return mixed
-	 */
+	/** Keep the Provider REST surface authoritative and non-cacheable. */
 	public function prevent_news_http_cache( $response, $server, $request ) {
 		unset( $server );
 
@@ -144,7 +105,6 @@ final class News_Controller {
 
 		$route  = (string) $request->get_route();
 		$prefix = '/' . Plugin::REST_NAMESPACE . '/news';
-
 		if ( $route !== $prefix && 0 !== strpos( $route, $prefix . '/' ) ) {
 			return $response;
 		}
@@ -158,12 +118,7 @@ final class News_Controller {
 		return $response;
 	}
 
-	/**
-	 * Return a paginated News collection.
-	 *
-	 * @param WP_REST_Request $request Current request.
-	 * @return WP_REST_Response
-	 */
+	/** Return a paginated News collection. */
 	public function get_items( WP_REST_Request $request ) {
 		$restricted = $this->license_restriction_response();
 		if ( null !== $restricted ) {
@@ -191,7 +146,6 @@ final class News_Controller {
 		);
 
 		$items = array();
-
 		foreach ( $query->posts as $post ) {
 			$items[] = $this->serializer->summary( $post );
 		}
@@ -210,16 +164,7 @@ final class News_Controller {
 		);
 	}
 
-	/**
-	 * Return one published News item by slug.
-	 *
-	 * The detail lookup intentionally uses a fresh WP_Query rather than a cached
-	 * path lookup so an editorial visibility transition cannot leave a stale
-	 * detail response at the Provider boundary.
-	 *
-	 * @param WP_REST_Request $request Current request.
-	 * @return WP_REST_Response|WP_Error
-	 */
+	/** Return one published News item by slug. */
 	public function get_item( WP_REST_Request $request ) {
 		$restricted = $this->license_restriction_response();
 		if ( null !== $restricted ) {
@@ -227,7 +172,6 @@ final class News_Controller {
 		}
 
 		$slug = (string) $request->get_param( 'slug' );
-
 		$query = new WP_Query(
 			array(
 				'post_type'           => 'post',
@@ -242,7 +186,6 @@ final class News_Controller {
 		);
 
 		$post = ! empty( $query->posts ) ? $query->posts[0] : null;
-
 		if ( ! $post || 'publish' !== get_post_status( $post ) || ! empty( $post->post_password ) ) {
 			return new WP_Error(
 				'headless_core_news_not_found',
@@ -254,14 +197,7 @@ final class News_Controller {
 		return new WP_REST_Response( $this->serializer->detail( $post ), 200 );
 	}
 
-	/**
-	 * Return an explicit non-cacheable licensing response when News is restricted.
-	 *
-	 * This only gates the public Headless value boundary. Native WordPress posts,
-	 * editing, imports and administrative workflows remain untouched.
-	 *
-	 * @return WP_REST_Response|null
-	 */
+	/** Return an explicit non-cacheable licensing response when News is restricted. */
 	private function license_restriction_response() {
 		$decision = License_Gate::evaluate( License_Policy::CAPABILITY_PUBLIC_CONTENT, 'news' );
 		if ( ! empty( $decision['allowed'] ) ) {
@@ -273,16 +209,16 @@ final class News_Controller {
 			: 'LICENSE_RESTRICTION';
 
 		$messages = array(
-			'LICENSE_RENEWAL_REQUIRED'     => 'This Headless API license requires renewal.',
-			'LICENSE_SUSPENDED'            => 'This Headless API license is suspended.',
-			'LICENSE_REVOKED'              => 'This Headless API license has been revoked.',
-			'ENTITLEMENT_REQUIRED'         => 'This license does not include the News module.',
-			'LICENSE_VERIFICATION_REQUIRED'=> 'This Headless API license could not be verified.',
+			'LICENSE_RENEWAL_REQUIRED'      => 'This Headless API license requires renewal.',
+			'LICENSE_REVALIDATION_REQUIRED' => 'This Headless API license must be revalidated.',
+			'LICENSE_SUSPENDED'             => 'This Headless API license is suspended.',
+			'LICENSE_REVOKED'               => 'This Headless API license has been revoked.',
+			'ENTITLEMENT_REQUIRED'          => 'This license does not include the News module.',
+			'LICENSE_VERIFICATION_REQUIRED' => 'This Headless API license could not be verified.',
 		);
 
 		$message = isset( $messages[ $code ] ) ? $messages[ $code ] : 'The News Headless API is currently restricted by licensing policy.';
-
-		return new WP_REST_Response(
+		$response = new WP_REST_Response(
 			array(
 				'code'    => $code,
 				'message' => $message,
@@ -291,49 +227,23 @@ final class News_Controller {
 			),
 			403
 		);
+		$response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
+		$response->header( 'Pragma', 'no-cache' );
+		return $response;
 	}
 
-	/**
-	 * Validate collection page.
-	 *
-	 * @param mixed $value Request value.
-	 * @return bool
-	 */
 	public function validate_page( $value ) {
 		return is_numeric( $value ) && (int) $value >= 1;
 	}
 
-	/**
-	 * Validate collection page size.
-	 *
-	 * @param mixed $value Request value.
-	 * @return bool
-	 */
 	public function validate_per_page( $value ) {
 		return is_numeric( $value ) && (int) $value >= 1 && (int) $value <= self::MAX_PER_PAGE;
 	}
 
-	/**
-	 * Validate collection sort direction.
-	 *
-	 * @param mixed $value Request value.
-	 * @return bool
-	 */
 	public function validate_order( $value ) {
 		return in_array( strtolower( (string) $value ), array( 'asc', 'desc' ), true );
 	}
 
-	/**
-	 * Validate collection sort field.
-	 *
-	 * Title ordering is intentionally excluded from the v0.2.0 contract. Legacy
-	 * WordPress titles may contain source entities or decorative Unicode that do
-	 * not sort the same way as the normalized public title returned by the API.
-	 * Date fields provide stable, consumer-relevant ordering for News.
-	 *
-	 * @param mixed $value Request value.
-	 * @return bool
-	 */
 	public function validate_orderby( $value ) {
 		return in_array( (string) $value, array( 'date', 'modified' ), true );
 	}
