@@ -39,6 +39,9 @@ jobs:
       - name: Run Licensing trust and operational state regression test
         run: php tests/licensing-trust-state.php
 
+      - name: Run Licensing manager authoritative server status regression test
+        run: php tests/licensing-manager-server-status.php
+
       - name: Run Licensing policy regression test
         run: php tests/licensing-policy.php
 
