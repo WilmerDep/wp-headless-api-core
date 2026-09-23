@@ -8,6 +8,8 @@
 namespace HeadlessApiCore\Modules\Forms;
 
 use HeadlessApiCore\Core\Plugin;
+use HeadlessApiCore\Licensing\License_Gate;
+use HeadlessApiCore\Licensing\License_Policy;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -81,6 +83,11 @@ final class Forms_Controller {
 
 	/** Return published, enabled forms for discovery by headless consumers. */
 	public function collection( WP_REST_Request $request ) {
+		$restricted = $this->license_restriction_response( License_Policy::CAPABILITY_PUBLIC_CONTENT, 'forms' );
+		if ( null !== $restricted ) {
+			return $restricted;
+		}
+
 		$key_param = $request->get_param( 'key' );
 		$key       = null === $key_param ? '' : Forms_Identity::sanitize_key( $key_param );
 		if ( null !== $key_param && '' === $key ) {
@@ -124,6 +131,11 @@ final class Forms_Controller {
 
 	/** Return one published + enabled form by slug. */
 	public function single( WP_REST_Request $request ) {
+		$restricted = $this->license_restriction_response( License_Policy::CAPABILITY_PUBLIC_CONTENT, 'forms' );
+		if ( null !== $restricted ) {
+			return $restricted;
+		}
+
 		$post = $this->find_public_form( $request->get_param( 'slug' ) );
 		if ( ! $post ) {
 			return $this->response(
@@ -140,6 +152,19 @@ final class Forms_Controller {
 
 	/** Validate, sanitize and deliver one public submission. */
 	public function submit( WP_REST_Request $request ) {
+		// Transactional submissions stay available through ordinary expiration,
+		// suspension and offline-tolerance exhaustion, but never for untrusted or
+		// revoked licenses. Both Forms and Mail entitlements are required because
+		// the submission pipeline delivers through Mail Core.
+		$restricted = $this->license_restriction_response( License_Policy::CAPABILITY_CRITICAL_TRANSACTION, 'forms' );
+		if ( null !== $restricted ) {
+			return $restricted;
+		}
+		$restricted = $this->license_restriction_response( License_Policy::CAPABILITY_CRITICAL_TRANSACTION, 'mail' );
+		if ( null !== $restricted ) {
+			return $restricted;
+		}
+
 		$post = $this->find_public_form( $request->get_param( 'slug' ) );
 		if ( ! $post ) {
 			return $this->response(
@@ -191,6 +216,35 @@ final class Forms_Controller {
 			return null;
 		}
 		return $post;
+	}
+
+	/** Return a no-store licensing response or null when a capability is allowed. */
+	private function license_restriction_response( $capability, $entitlement ) {
+		$decision = License_Gate::evaluate( $capability, $entitlement );
+		if ( ! empty( $decision['allowed'] ) ) {
+			return null;
+		}
+
+		$code = isset( $decision['code'] ) && is_string( $decision['code'] ) && '' !== $decision['code'] ? $decision['code'] : 'LICENSE_RESTRICTION';
+		$messages = array(
+			'LICENSE_RENEWAL_REQUIRED'      => 'This Headless API license requires renewal.',
+			'LICENSE_REVALIDATION_REQUIRED' => 'This Headless API license must be revalidated.',
+			'LICENSE_SUSPENDED'             => 'This Headless API license is suspended.',
+			'LICENSE_REVOKED'               => 'This Headless API license has been revoked.',
+			'LICENSE_VERIFICATION_REQUIRED' => 'This Headless API license could not be verified.',
+			'ENTITLEMENT_REQUIRED'          => 'This license does not include the required ' . $entitlement . ' capability.',
+		);
+
+		return $this->response(
+			array(
+				'ok'      => false,
+				'code'    => $code,
+				'message' => isset( $messages[ $code ] ) ? $messages[ $code ] : 'This form capability is currently restricted by licensing policy.',
+				'module'  => (string) $entitlement,
+				'status'  => isset( $decision['status'] ) ? (string) $decision['status'] : 'untrusted',
+			),
+			403
+		);
 	}
 
 	/** Build a no-store REST response for live form capability/schema data. */
