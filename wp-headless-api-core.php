@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Headless API Core
  * Description: Modular REST API core for using WordPress as a headless CMS.
- * Version: 0.7.15
+ * Version: 0.8.0
  * Author: WilmerDep
  * Text Domain: wp-headless-api-core
  * Domain Path: /languages
@@ -10,13 +10,23 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'HEADLESS_API_CORE_VERSION', '0.7.15' );
+define( 'HEADLESS_API_CORE_VERSION', '0.8.0' );
 define( 'HEADLESS_API_CORE_FILE', __FILE__ );
 define( 'HEADLESS_API_CORE_PATH', plugin_dir_path( __FILE__ ) );
 
 require_once HEADLESS_API_CORE_PATH . 'includes/Core/Plugin.php';
 require_once HEADLESS_API_CORE_PATH . 'includes/Rest/Health_Controller.php';
 require_once HEADLESS_API_CORE_PATH . 'includes/Revalidation/Revalidation_Client.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Instance.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Storage.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Verifier.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Entitlements.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Policy.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Client.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Manager.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Gate.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Admin_Notice.php';
+require_once HEADLESS_API_CORE_PATH . 'includes/Licensing/License_Admin_Page.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Mail/Mail_Settings.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Mail/Mail_Admin.php';
 require_once HEADLESS_API_CORE_PATH . 'modules/Mail/Mail_Controller.php';
