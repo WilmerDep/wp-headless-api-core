@@ -40,16 +40,39 @@ final class License_Admin_Page {
 		$status       = isset( $verification['status'] ) ? (string) $verification['status'] : 'untrusted';
 		$trusted      = ! empty( $verification['trusted'] );
 		$operational  = ! empty( $verification['operational'] );
+		$instance_id  = License_Instance::get();
+		$host         = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+		$domain       = is_string( $host ) ? strtolower( $host ) : '';
+		$result       = isset( $_GET['license_result'] ) ? sanitize_key( wp_unslash( $_GET['license_result'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$result_code  = isset( $_GET['license_code'] ) ? sanitize_key( wp_unslash( $_GET['license_code'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Headless API Core — Licencia', 'wp-headless-api-core' ); ?></h1>
 			<p><?php esc_html_e( 'Gestiona la activación de esta instalación. La clave de licencia nunca se guarda en texto plano.', 'wp-headless-api-core' ); ?></p>
+
+			<?php if ( 'success' === $result ) : ?>
+				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'La operación de licencia se completó correctamente.', 'wp-headless-api-core' ); ?></p></div>
+			<?php elseif ( 'error' === $result ) : ?>
+				<div class="notice notice-error"><p>
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: %s: licensing error code. */
+							__( 'No se pudo completar la operación de licencia. Código: %s', 'wp-headless-api-core' ),
+							$result_code ? $result_code : 'licensing_error'
+						)
+					);
+					?>
+				</p></div>
+			<?php endif; ?>
 
 			<table class="widefat striped" style="max-width:760px;margin:20px 0;">
 				<tbody>
 					<tr><th><?php esc_html_e( 'Estado', 'wp-headless-api-core' ); ?></th><td><?php echo esc_html( $status ); ?></td></tr>
 					<tr><th><?php esc_html_e( 'Token confiable', 'wp-headless-api-core' ); ?></th><td><?php echo esc_html( $trusted ? 'Sí' : 'No' ); ?></td></tr>
 					<tr><th><?php esc_html_e( 'Operativo', 'wp-headless-api-core' ); ?></th><td><?php echo esc_html( $operational ? 'Sí' : 'No' ); ?></td></tr>
+					<tr><th><?php esc_html_e( 'Dominio', 'wp-headless-api-core' ); ?></th><td><code><?php echo esc_html( $domain ); ?></code></td></tr>
+					<tr><th><?php esc_html_e( 'ID de instalación', 'wp-headless-api-core' ); ?></th><td><code><?php echo esc_html( $instance_id ); ?></code></td></tr>
 					<?php if ( isset( $license['plan'] ) ) : ?><tr><th><?php esc_html_e( 'Plan', 'wp-headless-api-core' ); ?></th><td><?php echo esc_html( (string) $license['plan'] ); ?></td></tr><?php endif; ?>
 					<?php if ( isset( $license['expiresAt'] ) ) : ?><tr><th><?php esc_html_e( 'Expira', 'wp-headless-api-core' ); ?></th><td><?php echo esc_html( (string) $license['expiresAt'] ); ?></td></tr><?php endif; ?>
 				</tbody>
