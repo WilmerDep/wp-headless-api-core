@@ -56,6 +56,18 @@ namespace HeadlessApiCore\Core {
 	}
 }
 
+namespace HeadlessApiCore\Licensing {
+	class License_Policy {
+		const CAPABILITY_PUBLIC_CONTENT = 'public_content';
+	}
+	class License_Gate {
+		public static function evaluate( $capability, $entitlement = null ) {
+			unset( $capability, $entitlement );
+			return array( 'allowed' => true, 'status' => 'active' );
+		}
+	}
+}
+
 namespace HeadlessApiCore\Modules\Hero {
 	class Hero_Post_Type {
 		const POST_TYPE = 'headless_hero';
