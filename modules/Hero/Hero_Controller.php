@@ -50,10 +50,7 @@ final class Hero_Controller {
 		return true;
 	}
 
-	/**
-	 * @param WP_REST_Request $request Current request.
-	 * @return WP_REST_Response
-	 */
+	/** @param WP_REST_Request $request Current request. @return WP_REST_Response */
 	public function get_items( WP_REST_Request $request ) {
 		unset( $request );
 
@@ -99,13 +96,14 @@ final class Hero_Controller {
 		$code = isset( $decision['code'] ) && is_string( $decision['code'] ) && '' !== $decision['code'] ? $decision['code'] : 'LICENSE_RESTRICTION';
 		$messages = array(
 			'LICENSE_RENEWAL_REQUIRED'      => 'This Headless API license requires renewal.',
+			'LICENSE_REVALIDATION_REQUIRED' => 'This Headless API license must be revalidated.',
 			'LICENSE_SUSPENDED'             => 'This Headless API license is suspended.',
 			'LICENSE_REVOKED'               => 'This Headless API license has been revoked.',
 			'ENTITLEMENT_REQUIRED'          => 'This license does not include the Hero module.',
 			'LICENSE_VERIFICATION_REQUIRED' => 'This Headless API license could not be verified.',
 		);
 
-		return new WP_REST_Response(
+		$response = new WP_REST_Response(
 			array(
 				'code'    => $code,
 				'message' => isset( $messages[ $code ] ) ? $messages[ $code ] : 'The Hero Headless API is currently restricted by licensing policy.',
@@ -114,14 +112,12 @@ final class Hero_Controller {
 			),
 			403
 		);
+		$response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
+		$response->header( 'Pragma', 'no-cache' );
+		return $response;
 	}
 
-	/**
-	 * @param mixed           $response REST response.
-	 * @param WP_REST_Server  $server   REST server.
-	 * @param WP_REST_Request $request  Current request.
-	 * @return mixed
-	 */
+	/** Prevent stale Provider-side HTTP caching for the Hero route. */
 	public function prevent_hero_http_cache( $response, $server, $request ) {
 		unset( $server );
 		if ( ! ( $request instanceof WP_REST_Request ) || ! method_exists( $request, 'get_route' ) ) {
