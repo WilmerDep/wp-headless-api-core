@@ -6,6 +6,13 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Headless API Core v0.8.2
+
+#### Changed
+
+- WordPress plugin author branding changed from `WilmerDep` to `PholioDev`.
+- Plugin package version bumped to `0.8.2`; runtime behavior and licensing contract remain unchanged.
+
 ### Mail / SMTP Core v0.6.1
 
 #### Added
