@@ -63,6 +63,7 @@ final class License_Manager {
 		$domain   = self::current_domain();
 		$response = License_Client::refresh( $token, $domain );
 		if ( is_wp_error( $response ) ) {
+			self::persist_authoritative_status_from_error( $response );
 			return $response;
 		}
 
@@ -94,6 +95,12 @@ final class License_Manager {
 	/**
 	 * Verify currently stored token against this installation.
 	 *
+	 * A restrictive status learned directly from the licensing server during a
+	 * refresh attempt is applied after cryptographic token verification. This
+	 * preserves signed-token trust while ensuring suspension/revocation learned
+	 * online is not lost merely because the previously issued token itself does
+	 * not carry a status claim.
+	 *
 	 * @return array<string,mixed>
 	 */
 	public static function verify_stored() {
@@ -108,7 +115,7 @@ final class License_Manager {
 			);
 		}
 
-		return License_Verifier::verify(
+		$verification = License_Verifier::verify(
 			$token,
 			self::PUBLIC_KEYS,
 			array(
@@ -117,6 +124,33 @@ final class License_Manager {
 				'instanceId' => License_Instance::get(),
 			)
 		);
+
+		if ( empty( $verification['trusted'] ) ) {
+			return $verification;
+		}
+
+		$server_status = isset( $state['serverStatus'] ) && is_string( $state['serverStatus'] )
+			? $state['serverStatus']
+			: '';
+
+		if ( in_array( $server_status, array( 'suspended', 'revoked', 'expired' ), true ) ) {
+			$verification['valid']       = false;
+			$verification['operational'] = false;
+			$verification['status']      = $server_status;
+			$verification['code']        = 'suspended' === $server_status
+				? 'LICENSE_SUSPENDED'
+				: ( 'revoked' === $server_status ? 'LICENSE_REVOKED' : 'LICENSE_EXPIRED' );
+			$verification['message']     = 'suspended' === $server_status
+				? 'License is suspended according to the licensing server.'
+				: ( 'revoked' === $server_status
+					? 'License is revoked according to the licensing server.'
+					: 'License is expired according to the licensing server.' );
+			$verification['serverStatusObservedAt'] = isset( $state['serverStatusObservedAt'] )
+				? (string) $state['serverStatusObservedAt']
+				: null;
+		}
+
+		return $verification;
 	}
 
 	/**
@@ -174,22 +208,62 @@ final class License_Manager {
 			);
 		}
 
+		$license       = isset( $response['license'] ) && is_array( $response['license'] ) ? $response['license'] : array();
+		$server_status = isset( $license['status'] ) && is_string( $license['status'] ) ? $license['status'] : '';
+		$now           = gmdate( 'c' );
+
 		License_Storage::set(
 			array(
-				'token'        => $token,
-				'trusted'      => true,
-				'operational'  => ! empty( $verification['operational'] ),
-				'verified'     => true,
-				'status'       => isset( $verification['status'] ) ? $verification['status'] : 'untrusted',
-				'payload'      => $verification['payload'],
-				'header'       => $verification['header'],
-				'verification' => $verification,
-				'license'      => isset( $response['license'] ) && is_array( $response['license'] ) ? $response['license'] : array(),
-				'updatedAt'    => gmdate( 'c' ),
+				'token'                  => $token,
+				'trusted'                => true,
+				'operational'            => ! empty( $verification['operational'] ),
+				'verified'               => true,
+				'status'                 => isset( $verification['status'] ) ? $verification['status'] : 'untrusted',
+				'payload'                => $verification['payload'],
+				'header'                 => $verification['header'],
+				'verification'           => $verification,
+				'license'                => $license,
+				'serverStatus'           => $server_status,
+				'serverStatusObservedAt' => '' !== $server_status ? $now : null,
+				'updatedAt'              => $now,
 			)
 		);
 
 		return $verification;
+	}
+
+	/**
+	 * Persist only authoritative lifecycle failures returned by the server.
+	 * Transport errors, authentication errors and malformed responses do not
+	 * overwrite the last known licensing status.
+	 *
+	 * @param \WP_Error $error Refresh error.
+	 * @return void
+	 */
+	private static function persist_authoritative_status_from_error( $error ) {
+		$data     = $error->get_error_data();
+		$response = is_array( $data ) && isset( $data['response'] ) && is_array( $data['response'] )
+			? $data['response']
+			: array();
+		$code     = isset( $response['code'] ) && is_string( $response['code'] ) ? $response['code'] : '';
+		$map      = array(
+			'LICENSE_SUSPENDED' => 'suspended',
+			'LICENSE_REVOKED'   => 'revoked',
+			'LICENSE_EXPIRED'   => 'expired',
+		);
+
+		if ( ! isset( $map[ $code ] ) ) {
+			return;
+		}
+
+		$state                           = License_Storage::get();
+		$state['serverStatus']           = $map[ $code ];
+		$state['serverStatusObservedAt'] = gmdate( 'c' );
+		$state['updatedAt']              = $state['serverStatusObservedAt'];
+		if ( isset( $state['license'] ) && is_array( $state['license'] ) ) {
+			$state['license']['status'] = $map[ $code ];
+		}
+		License_Storage::set( $state );
 	}
 
 	/** @return string */
