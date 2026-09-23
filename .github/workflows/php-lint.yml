@@ -30,6 +30,33 @@ jobs:
             php -l "$file"
           done < <(find . -type f -name '*.php' -print0)
 
+      - name: Run Licensing contract v1 regression test
+        run: php tests/licensing-contract-v1.php
+
+      - name: Run Licensing verifier hardening regression test
+        run: php tests/licensing-contract-hardening.php
+
+      - name: Run Licensing trust and operational state regression test
+        run: php tests/licensing-trust-state.php
+
+      - name: Run Licensing manager authoritative server status regression test
+        run: php tests/licensing-manager-server-status.php
+
+      - name: Run Licensing policy regression test
+        run: php tests/licensing-policy.php
+
+      - name: Run Licensing gate regression test
+        run: php tests/licensing-gate.php
+
+      - name: Run Licensing admin notice regression test
+        run: php tests/licensing-admin-notice.php
+
+      - name: Run Licensing admin page registration regression test
+        run: php tests/licensing-admin-page.php
+
+      - name: Run advanced module licensing integration contract
+        run: php tests/licensing-advanced-modules.php
+
       - name: Run isolated News SEO fallback test
         run: php tests/news-seo-fallback.php
 
@@ -38,6 +65,9 @@ jobs:
 
       - name: Run News public visibility regression test
         run: php tests/news-public-visibility.php
+
+      - name: Run News licensing enforcement regression test
+        run: php tests/news-licensing-enforcement.php
 
       - name: Run News revalidation HMAC signature test
         run: php tests/news-revalidation-signature.php
@@ -77,6 +107,9 @@ jobs:
 
       - name: Run Directory CSV import mode regression test
         run: php tests/directory-csv-mode.php
+
+      - name: Run Hero and Directory licensing enforcement regression test
+        run: php tests/public-module-licensing-enforcement.php
 
       - name: Run Services serializer regression test
         run: php tests/services-serializer.php
