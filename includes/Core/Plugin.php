@@ -7,6 +7,9 @@
 
 namespace HeadlessApiCore\Core;
 
+use HeadlessApiCore\Licensing\License_Admin_Notice;
+use HeadlessApiCore\Licensing\License_Admin_Page;
+use HeadlessApiCore\Licensing\License_Manager;
 use HeadlessApiCore\Modules\Directory\Directory_Module;
 use HeadlessApiCore\Modules\Forms\Forms_Module;
 use HeadlessApiCore\Modules\Hero\Hero_Module;
@@ -31,13 +34,18 @@ final class Plugin {
 	 */
 	private static $booted = false;
 
-	/** Bootstrap the plugin modules available in this version. */
+	/** Bootstrap licensing and all modules available in this version. */
 	public static function boot() {
 		if ( self::$booted ) {
 			return;
 		}
 
 		self::$booted = true;
+
+		// Licensing infrastructure and administrator UX boot before feature modules.
+		License_Manager::boot();
+		License_Admin_Notice::register();
+		License_Admin_Page::register();
 
 		$health_controller = new Health_Controller();
 		$health_controller->register();
