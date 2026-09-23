@@ -44,26 +44,26 @@ final class License_Admin_Page {
 		$host         = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
 		$domain       = is_string( $host ) ? strtolower( $host ) : '';
 		$result       = isset( $_GET['license_result'] ) ? sanitize_key( wp_unslash( $_GET['license_result'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$result_code  = isset( $_GET['license_code'] ) ? sanitize_key( wp_unslash( $_GET['license_code'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$action       = isset( $_GET['license_action'] ) ? sanitize_key( wp_unslash( $_GET['license_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$result_code  = isset( $_GET['license_code'] ) ? sanitize_text_field( wp_unslash( $_GET['license_code'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$operation    = self::build_operation_notice( $result, $action, $result_code );
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Headless API Core — Licencia', 'wp-headless-api-core' ); ?></h1>
 			<p><?php esc_html_e( 'Gestiona la activación de esta instalación. La clave de licencia nunca se guarda en texto plano.', 'wp-headless-api-core' ); ?></p>
 
-			<?php if ( 'success' === $result ) : ?>
-				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'La operación de licencia se completó correctamente.', 'wp-headless-api-core' ); ?></p></div>
-			<?php elseif ( 'error' === $result ) : ?>
-				<div class="notice notice-error"><p>
-					<?php
-					echo esc_html(
-						sprintf(
-							/* translators: %s: licensing error code. */
-							__( 'No se pudo completar la operación de licencia. Código: %s', 'wp-headless-api-core' ),
-							$result_code ? $result_code : 'licensing_error'
-						)
-					);
-					?>
-				</p></div>
+			<?php if ( null !== $operation ) : ?>
+				<?php
+				$class = 'notice notice-info';
+				if ( 'success' === $operation['level'] ) {
+					$class = 'notice notice-success is-dismissible';
+				} elseif ( 'warning' === $operation['level'] ) {
+					$class = 'notice notice-warning';
+				} elseif ( 'error' === $operation['level'] ) {
+					$class = 'notice notice-error';
+				}
+				?>
+				<div class="<?php echo esc_attr( $class ); ?>"><p><?php echo esc_html( $operation['message'] ); ?></p></div>
 			<?php endif; ?>
 
 			<table class="widefat striped" style="max-width:760px;margin:20px 0;">
@@ -102,23 +102,117 @@ final class License_Admin_Page {
 		<?php
 	}
 
+	/**
+	 * Build concise administrator-facing feedback for the last explicit license action.
+	 *
+	 * @param string $result Result class from the redirect query string.
+	 * @param string $action activate|refresh|deactivate.
+	 * @param string $code   Preferred server or local error code.
+	 * @return array<string,string>|null
+	 */
+	public static function build_operation_notice( $result, $action, $code = '' ) {
+		$result = strtolower( trim( (string) $result ) );
+		$action = strtolower( trim( (string) $action ) );
+		$code   = strtoupper( trim( (string) $code ) );
+
+		if ( 'success' === $result ) {
+			$messages = array(
+				'activate'   => 'La licencia se activó correctamente en esta instalación.',
+				'refresh'    => 'La licencia se revalidó correctamente con el servidor y el estado local quedó actualizado.',
+				'deactivate' => 'La licencia se desactivó correctamente en esta instalación. Puedes volver a activarla cuando lo necesites.',
+			);
+			return array(
+				'level'   => 'success',
+				'message' => isset( $messages[ $action ] ) ? $messages[ $action ] : 'La operación de licencia se completó correctamente.',
+			);
+		}
+
+		if ( 'error' !== $result ) {
+			return null;
+		}
+
+		$known = array(
+			'LICENSE_SUSPENDED' => array(
+				'level'   => 'warning',
+				'message' => 'La revalidación se completó: el servidor informó que la licencia está suspendida. Reactívala en el panel de licencias y vuelve a revalidar esta instalación.',
+			),
+			'LICENSE_EXPIRED' => array(
+				'level'   => 'warning',
+				'message' => 'La licencia está vencida. Renueva la licencia y vuelve a revalidar esta instalación.',
+			),
+			'LICENSE_REVOKED' => array(
+				'level'   => 'error',
+				'message' => 'La licencia fue revocada y ya no puede recuperarse desde esta instalación. Asigna o emite una nueva licencia para volver a habilitar las capacidades licenciadas.',
+			),
+			'ENTITLEMENT_REQUIRED' => array(
+				'level'   => 'warning',
+				'message' => 'La licencia es válida, pero no incluye una capacidad necesaria para esta operación. Revisa el plan o los módulos asignados.',
+			),
+			'DOMAIN_NOT_ALLOWED' => array(
+				'level'   => 'error',
+				'message' => 'Este dominio no está autorizado por la licencia. Revisa los dominios permitidos en el panel de licencias.',
+			),
+			'INSTANCE_MISMATCH' => array(
+				'level'   => 'error',
+				'message' => 'La licencia está asociada a otra instalación. Revisa la activación registrada antes de continuar.',
+			),
+			'MAX_ACTIVATIONS_REACHED' => array(
+				'level'   => 'error',
+				'message' => 'La licencia alcanzó el máximo de activaciones permitidas. Libera una activación o amplía el límite desde el panel de licencias.',
+			),
+			'ACTIVATION_NOT_FOUND' => array(
+				'level'   => 'warning',
+				'message' => 'La activación de esta instalación ya no está registrada en el servidor. Revisa la licencia antes de intentar activarla nuevamente.',
+			),
+			'LICENSE_NOT_FOUND' => array(
+				'level'   => 'error',
+				'message' => 'La licencia ya no existe en el servicio de licencias. Debes asignar o emitir una nueva licencia.',
+			),
+			'LICENSING_MISSING_TOKEN' => array(
+				'level'   => 'warning',
+				'message' => 'Esta instalación no tiene un token de licencia guardado para revalidar.',
+			),
+			'LICENSING_VERIFICATION_FAILED' => array(
+				'level'   => 'error',
+				'message' => 'El token recibido no superó la verificación de seguridad. No se guardó como una licencia confiable.',
+			),
+			'LICENSING_INVALID_RESPONSE' => array(
+				'level'   => 'error',
+				'message' => 'El servicio de licencias respondió de forma inesperada. Inténtalo nuevamente en unos momentos.',
+			),
+			'LICENSING_HTTP_ERROR' => array(
+				'level'   => 'error',
+				'message' => 'El servicio de licencias rechazó la operación. Revisa el estado de la licencia y vuelve a intentarlo.',
+			),
+		);
+
+		if ( isset( $known[ $code ] ) ) {
+			return $known[ $code ];
+		}
+
+		return array(
+			'level'   => 'error',
+			'message' => 'No se pudo completar la operación de licencia. Inténtalo nuevamente; si el problema continúa, revisa la conexión con el servicio de licencias.',
+		);
+	}
+
 	public static function handle_activate() {
 		self::authorize( 'headless_api_core_license_activate' );
 		$key = isset( $_POST['license_key'] ) ? sanitize_text_field( wp_unslash( $_POST['license_key'] ) ) : '';
 		if ( '' === $key ) {
-			self::redirect_with_result( new \WP_Error( 'licensing_missing_key', 'License key is required.' ) );
+			self::redirect_with_result( new \WP_Error( 'licensing_missing_key', 'License key is required.' ), 'activate' );
 		}
-		self::redirect_with_result( License_Manager::activate( $key ) );
+		self::redirect_with_result( License_Manager::activate( $key ), 'activate' );
 	}
 
 	public static function handle_refresh() {
 		self::authorize( 'headless_api_core_license_refresh' );
-		self::redirect_with_result( License_Manager::refresh() );
+		self::redirect_with_result( License_Manager::refresh(), 'refresh' );
 	}
 
 	public static function handle_deactivate() {
 		self::authorize( 'headless_api_core_license_deactivate' );
-		self::redirect_with_result( License_Manager::deactivate() );
+		self::redirect_with_result( License_Manager::deactivate(), 'deactivate' );
 	}
 
 	private static function authorize( $action ) {
@@ -128,11 +222,33 @@ final class License_Admin_Page {
 		check_admin_referer( $action );
 	}
 
-	private static function redirect_with_result( $result ) {
-		$args = array( 'page' => self::PAGE_SLUG );
+	/**
+	 * Prefer a specific server lifecycle code over the generic HTTP wrapper code.
+	 *
+	 * @param \WP_Error $error Licensing error.
+	 * @return string
+	 */
+	private static function display_error_code( $error ) {
+		$data = $error->get_error_data();
+		if ( is_array( $data ) && isset( $data['response'] ) && is_array( $data['response'] ) ) {
+			$response_code = isset( $data['response']['code'] ) && is_string( $data['response']['code'] )
+				? trim( $data['response']['code'] )
+				: '';
+			if ( '' !== $response_code ) {
+				return strtoupper( $response_code );
+			}
+		}
+		return strtoupper( (string) $error->get_error_code() );
+	}
+
+	private static function redirect_with_result( $result, $action ) {
+		$args = array(
+			'page'           => self::PAGE_SLUG,
+			'license_action' => sanitize_key( $action ),
+		);
 		if ( is_wp_error( $result ) ) {
 			$args['license_result'] = 'error';
-			$args['license_code']   = $result->get_error_code();
+			$args['license_code']   = self::display_error_code( $result );
 		} else {
 			$args['license_result'] = 'success';
 		}
