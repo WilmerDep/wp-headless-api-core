@@ -100,6 +100,21 @@ $empty_claim['customerId'] = '   ';
 $result = License_Verifier::verify( hardening_token( $empty_claim, $secret_key ), $keys, $context );
 hardening_assert( 'TOKEN_MALFORMED' === ( $result['code'] ?? null ), 'empty required string claim is rejected' );
 
+$bad_refresh_order = $payload;
+$bad_refresh_order['refreshAfter'] = '2026-09-22T17:00:00+00:00';
+$result = License_Verifier::verify( hardening_token( $bad_refresh_order, $secret_key ), $keys, $context );
+hardening_assert( 'TOKEN_MALFORMED' === ( $result['code'] ?? null ), 'refreshAfter before issuedAt is rejected' );
+
+$bad_offline_order = $payload;
+$bad_offline_order['offlineUntil'] = '2026-09-23T05:00:00+00:00';
+$result = License_Verifier::verify( hardening_token( $bad_offline_order, $secret_key ), $keys, $context );
+hardening_assert( 'TOKEN_MALFORMED' === ( $result['code'] ?? null ), 'offlineUntil before refreshAfter is rejected' );
+
+$bad_grace_order = $payload;
+$bad_grace_order['graceUntil'] = '2027-09-21T18:00:00+00:00';
+$result = License_Verifier::verify( hardening_token( $bad_grace_order, $secret_key ), $keys, $context );
+hardening_assert( 'TOKEN_MALFORMED' === ( $result['code'] ?? null ), 'graceUntil before expiresAt is rejected' );
+
 $valid_token = hardening_token( $payload, $secret_key );
 $parts       = explode( '.', $valid_token );
 $short_sig   = $parts[0] . '.' . $parts[1] . '.' . hardening_b64url( str_repeat( "\x01", 12 ) );
