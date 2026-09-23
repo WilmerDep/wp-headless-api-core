@@ -8,6 +8,8 @@
 namespace HeadlessApiCore\Modules\News;
 
 use HeadlessApiCore\Core\Plugin;
+use HeadlessApiCore\Licensing\License_Gate;
+use HeadlessApiCore\Licensing\License_Policy;
 use WP_Error;
 use WP_Query;
 use WP_REST_Request;
@@ -109,6 +111,9 @@ final class News_Controller {
 	/**
 	 * Public read-only endpoints require no authentication.
 	 *
+	 * Licensing is enforced inside the response boundary rather than through
+	 * WordPress authentication so Consumers receive an explicit licensing code.
+	 *
 	 * @return bool
 	 */
 	public function public_permission() {
@@ -123,7 +128,7 @@ final class News_Controller {
 	 * of the Provider itself can otherwise leave a public collection temporarily
 	 * inconsistent with WordPress editorial state.
 	 *
-	 * This applies to successful News responses and News errors/404s alike.
+	 * This applies to successful News responses and licensing/error responses.
 	 *
 	 * @param mixed           $response REST response.
 	 * @param WP_REST_Server  $server   REST server.
@@ -160,6 +165,11 @@ final class News_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_items( WP_REST_Request $request ) {
+		$restricted = $this->license_restriction_response();
+		if ( null !== $restricted ) {
+			return $restricted;
+		}
+
 		$page     = max( 1, (int) $request->get_param( 'page' ) );
 		$per_page = min( self::MAX_PER_PAGE, max( 1, (int) $request->get_param( 'per_page' ) ) );
 		$order    = strtoupper( (string) $request->get_param( 'order' ) );
@@ -211,6 +221,11 @@ final class News_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function get_item( WP_REST_Request $request ) {
+		$restricted = $this->license_restriction_response();
+		if ( null !== $restricted ) {
+			return $restricted;
+		}
+
 		$slug = (string) $request->get_param( 'slug' );
 
 		$query = new WP_Query(
@@ -237,6 +252,45 @@ final class News_Controller {
 		}
 
 		return new WP_REST_Response( $this->serializer->detail( $post ), 200 );
+	}
+
+	/**
+	 * Return an explicit non-cacheable licensing response when News is restricted.
+	 *
+	 * This only gates the public Headless value boundary. Native WordPress posts,
+	 * editing, imports and administrative workflows remain untouched.
+	 *
+	 * @return WP_REST_Response|null
+	 */
+	private function license_restriction_response() {
+		$decision = License_Gate::evaluate( License_Policy::CAPABILITY_PUBLIC_CONTENT, 'news' );
+		if ( ! empty( $decision['allowed'] ) ) {
+			return null;
+		}
+
+		$code = isset( $decision['code'] ) && is_string( $decision['code'] ) && '' !== $decision['code']
+			? $decision['code']
+			: 'LICENSE_RESTRICTION';
+
+		$messages = array(
+			'LICENSE_RENEWAL_REQUIRED'     => 'This Headless API license requires renewal.',
+			'LICENSE_SUSPENDED'            => 'This Headless API license is suspended.',
+			'LICENSE_REVOKED'              => 'This Headless API license has been revoked.',
+			'ENTITLEMENT_REQUIRED'         => 'This license does not include the News module.',
+			'LICENSE_VERIFICATION_REQUIRED'=> 'This Headless API license could not be verified.',
+		);
+
+		$message = isset( $messages[ $code ] ) ? $messages[ $code ] : 'The News Headless API is currently restricted by licensing policy.';
+
+		return new WP_REST_Response(
+			array(
+				'code'    => $code,
+				'message' => $message,
+				'module'  => 'news',
+				'status'  => isset( $decision['status'] ) ? (string) $decision['status'] : 'untrusted',
+			),
+			403
+		);
 	}
 
 	/**
