@@ -70,6 +70,18 @@ namespace HeadlessApiCore\Core {
 	}
 }
 
+namespace HeadlessApiCore\Licensing {
+	class License_Policy {
+		const CAPABILITY_PUBLIC_CONTENT = 'public_content';
+	}
+	class License_Gate {
+		public static function evaluate( $capability, $entitlement = null ) {
+			unset( $capability, $entitlement );
+			return array( 'allowed' => true, 'status' => 'active' );
+		}
+	}
+}
+
 namespace HeadlessApiCore\Modules\Mail {
 	require_once dirname( __DIR__ ) . '/modules/Mail/Mail_Settings.php';
 	require_once dirname( __DIR__ ) . '/modules/Mail/Mail_Controller.php';
