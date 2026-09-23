@@ -149,11 +149,25 @@ final class License_Verifier {
 			}
 		}
 
-		$dates = array( 'issuedAt', 'refreshAfter', 'offlineUntil', 'expiresAt', 'graceUntil' );
+		$dates      = array( 'issuedAt', 'refreshAfter', 'offlineUntil', 'expiresAt', 'graceUntil' );
+		$timestamps = array();
 		foreach ( $dates as $claim ) {
-			if ( ! is_string( $payload[ $claim ] ) || '' === trim( $payload[ $claim ] ) || false === strtotime( $payload[ $claim ] ) ) {
+			if ( ! is_string( $payload[ $claim ] ) || '' === trim( $payload[ $claim ] ) ) {
 				return self::failure( 'TOKEN_MALFORMED', 'Invalid timestamp claim: ' . $claim );
 			}
+			$timestamp = strtotime( $payload[ $claim ] );
+			if ( false === $timestamp ) {
+				return self::failure( 'TOKEN_MALFORMED', 'Invalid timestamp claim: ' . $claim );
+			}
+			$timestamps[ $claim ] = $timestamp;
+		}
+
+		if (
+			$timestamps['issuedAt'] > $timestamps['refreshAfter'] ||
+			$timestamps['refreshAfter'] > $timestamps['offlineUntil'] ||
+			$timestamps['expiresAt'] > $timestamps['graceUntil']
+		) {
+			return self::failure( 'TOKEN_MALFORMED', 'License token temporal claims are out of order.' );
 		}
 
 		if ( isset( $context['product'] ) && (string) $context['product'] !== $payload['product'] ) {
@@ -169,9 +183,9 @@ final class License_Verifier {
 		}
 
 		$now = isset( $context['now'] ) ? (int) $context['now'] : time();
-		if ( $now > strtotime( $payload['graceUntil'] ) ) {
+		if ( $now > $timestamps['graceUntil'] ) {
 			$status = 'expired';
-		} elseif ( $now > strtotime( $payload['expiresAt'] ) ) {
+		} elseif ( $now > $timestamps['expiresAt'] ) {
 			$status = 'grace_period';
 		} else {
 			$status = 'active';
