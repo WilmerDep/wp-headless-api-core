@@ -8,6 +8,8 @@
 namespace HeadlessApiCore\Modules\Services;
 
 use HeadlessApiCore\Core\Plugin;
+use HeadlessApiCore\Licensing\License_Gate;
+use HeadlessApiCore\Licensing\License_Policy;
 use WP_Query;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -92,6 +94,11 @@ final class Services_Controller {
 
 	/** Return published services with optional group/featured filtering. */
 	public function get_items( WP_REST_Request $request ) {
+		$restricted = $this->license_restriction_response();
+		if ( null !== $restricted ) {
+			return $restricted;
+		}
+
 		$args = array(
 			'post_type'           => Services_Post_Type::POST_TYPE,
 			'post_status'         => 'publish',
@@ -165,6 +172,11 @@ final class Services_Controller {
 
 	/** Return available service groups. */
 	public function get_groups() {
+		$restricted = $this->license_restriction_response();
+		if ( null !== $restricted ) {
+			return $restricted;
+		}
+
 		$terms = get_terms(
 			array(
 				'taxonomy'   => Services_Features::TAXONOMY,
@@ -191,6 +203,11 @@ final class Services_Controller {
 
 	/** Return one published service by slug. */
 	public function get_item( WP_REST_Request $request ) {
+		$restricted = $this->license_restriction_response();
+		if ( null !== $restricted ) {
+			return $restricted;
+		}
+
 		$slug = sanitize_title( (string) $request->get_param( 'slug' ) );
 		if ( '' === $slug ) {
 			return new WP_REST_Response( array( 'item' => null ), 404 );
@@ -214,6 +231,37 @@ final class Services_Controller {
 		}
 
 		return new WP_REST_Response( array( 'item' => $this->serializer->item( $query->posts[0] ) ), 200 );
+	}
+
+	/** Build an explicit non-cacheable licensing response for Services. */
+	private function license_restriction_response() {
+		$decision = License_Gate::evaluate( License_Policy::CAPABILITY_PUBLIC_CONTENT, 'services' );
+		if ( ! empty( $decision['allowed'] ) ) {
+			return null;
+		}
+
+		$code = isset( $decision['code'] ) && is_string( $decision['code'] ) && '' !== $decision['code'] ? $decision['code'] : 'LICENSE_RESTRICTION';
+		$messages = array(
+			'LICENSE_RENEWAL_REQUIRED'      => 'This Headless API license requires renewal.',
+			'LICENSE_REVALIDATION_REQUIRED' => 'This Headless API license must be revalidated.',
+			'LICENSE_SUSPENDED'             => 'This Headless API license is suspended.',
+			'LICENSE_REVOKED'               => 'This Headless API license has been revoked.',
+			'ENTITLEMENT_REQUIRED'          => 'This license does not include the Services module.',
+			'LICENSE_VERIFICATION_REQUIRED' => 'This Headless API license could not be verified.',
+		);
+
+		$response = new WP_REST_Response(
+			array(
+				'code'    => $code,
+				'message' => isset( $messages[ $code ] ) ? $messages[ $code ] : 'The Services Headless API is currently restricted by licensing policy.',
+				'module'  => 'services',
+				'status'  => isset( $decision['status'] ) ? (string) $decision['status'] : 'untrusted',
+			),
+			403
+		);
+		$response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
+		$response->header( 'Pragma', 'no-cache' );
+		return $response;
 	}
 
 	/** Prevent stale Provider-side HTTP caching. */
