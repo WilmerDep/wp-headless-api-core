@@ -95,7 +95,7 @@ $public_expired = License_Policy::evaluate( License_Policy::STATE_EXPIRED, Licen
 advanced_license_assert( empty( $public_expired['allowed'] ) && 'LICENSE_RENEWAL_REQUIRED' === ( $public_expired['code'] ?? null ), 'expired public content is restricted' );
 
 $bootstrap = file_get_contents( $root . '/wp-headless-api-core.php' );
-advanced_license_assert( false !== strpos( $bootstrap, 'Version: 0.8.0' ), 'integration package version is 0.8.0' );
+advanced_license_assert( false !== strpos( $bootstrap, 'Version: 0.8.1' ), 'integration package version is 0.8.1' );
 foreach ( array( 'modules/Mail/', 'modules/Forms/', 'modules/SiteIdentity/', 'modules/News/', 'modules/Hero/', 'modules/Directory/', 'modules/Services/', 'includes/Licensing/' ) as $module_path ) {
 	advanced_license_assert( false !== strpos( $bootstrap, $module_path ), "bootstrap preserves {$module_path}" );
 }
